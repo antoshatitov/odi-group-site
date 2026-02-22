@@ -49,3 +49,27 @@
 
 Примечание: лимиты для source media на baseline-этапе зафиксированы на текущем уровне и будут
 ужесточаться по мере внедрения этапов оптимизации изображений/видео.
+
+## Промежуточные результаты после этапов 1-5
+
+Снимок сделан на ветке `plan/stage-6-regression-acceptance` после выполнения:
+
+- `npm run lint:web`
+- `npm run build:web`
+- `npm --workspace apps/web run perf-check`
+- `npm --workspace apps/web run media-check`
+
+### Что улучшилось
+
+- Main JS gzip: `~91.0 KB` (ниже лимита `100 KB`).
+- Hero media total: `~0.85 MB` (было `~3.6 MB`, цель `<1-1.5 MB`).
+- Hero MP4: `~0.35 MB`; Hero WebM: `~0.43 MB`.
+- Hero poster: `~39.7 KB (webp)` и `~36.4 KB (avif)`.
+- Появился route-level split для legal-страниц (`Policy/Consent/Cookies`) и отдельные чанки в `dist`.
+
+### Проверка регрессий (smoke)
+
+- Lint и build проходят без ошибок.
+- Budget checks (`perf-check`/`media-check`) проходят.
+- Ручная UI-регрессия требует полного прогона на целевом окружении; в этой сессии зафиксированы
+  smoke-проверки сборки и перф-бюджетов.
