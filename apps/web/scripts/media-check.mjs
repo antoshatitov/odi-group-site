@@ -8,7 +8,10 @@ const webDir = path.resolve(scriptDir, '..')
 const budgetsPath = path.join(webDir, 'perf-budgets.json')
 const gallerySourceDir = path.join(webDir, 'src', 'assets', 'builded')
 const galleryOptimizedDir = path.join(webDir, 'src', 'assets', 'builded-optimized')
-const heroVideoPath = path.join(webDir, 'public', 'videos', 'hero-video.mp4')
+const heroVideoMp4Path = path.join(webDir, 'public', 'videos', 'hero-video.mp4')
+const heroVideoWebmPath = path.join(webDir, 'public', 'videos', 'hero-video.webm')
+const heroPosterWebpPath = path.join(webDir, 'public', 'images', 'hero-poster.webp')
+const heroPosterAvifPath = path.join(webDir, 'public', 'images', 'hero-poster.avif')
 
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif'])
 
@@ -42,7 +45,10 @@ const run = async () => {
   const budgets = await readBudgets()
   const {
     maxOriginalImageMb,
-    maxHeroVideoMb,
+    maxHeroVideoMp4Mb,
+    maxHeroVideoWebmMb,
+    maxHeroPosterKb,
+    maxHeroMediaTotalMb,
     maxGallerySourceTotalMb,
     maxOptimizedThumbOrCoverKb,
     maxOptimizedFullMb,
@@ -84,11 +90,21 @@ const run = async () => {
     }),
   )
 
-  const heroVideoStat = await fs.stat(heroVideoPath)
+  const [heroVideoMp4Stat, heroVideoWebmStat, heroPosterWebpStat, heroPosterAvifStat] = await Promise.all([
+    fs.stat(heroVideoMp4Path),
+    fs.stat(heroVideoWebmPath),
+    fs.stat(heroPosterWebpPath),
+    fs.stat(heroPosterAvifPath),
+  ])
 
   const largestImageBytes = imageStats.reduce((largest, file) => Math.max(largest, file.size), 0)
   const totalGallerySourceBytes = imageStats.reduce((sum, file) => sum + file.size, 0)
-  const heroVideoBytes = heroVideoStat.size
+  const heroVideoMp4Bytes = heroVideoMp4Stat.size
+  const heroVideoWebmBytes = heroVideoWebmStat.size
+  const heroPosterWebpBytes = heroPosterWebpStat.size
+  const heroPosterAvifBytes = heroPosterAvifStat.size
+  const heroMediaTotalBytes =
+    heroVideoMp4Bytes + heroVideoWebmBytes + heroPosterWebpBytes + heroPosterAvifBytes
   const optimizedTotalBytes = optimizedImageStats.reduce((sum, file) => sum + file.size, 0)
 
   const optimizedThumbCoverLargest = optimizedImageStats.reduce((largest, file) => {
@@ -108,9 +124,31 @@ const run = async () => {
       limit: toBytesFromMb(maxOriginalImageMb),
     },
     {
-      label: 'Hero video',
-      actual: heroVideoBytes,
-      limit: toBytesFromMb(maxHeroVideoMb),
+      label: 'Hero video MP4',
+      actual: heroVideoMp4Bytes,
+      limit: toBytesFromMb(maxHeroVideoMp4Mb),
+    },
+    {
+      label: 'Hero video WebM',
+      actual: heroVideoWebmBytes,
+      limit: toBytesFromMb(maxHeroVideoWebmMb),
+    },
+    {
+      label: 'Hero poster WebP',
+      actual: heroPosterWebpBytes,
+      limit: toBytesFromKb(maxHeroPosterKb),
+      formatter: formatKb,
+    },
+    {
+      label: 'Hero poster AVIF',
+      actual: heroPosterAvifBytes,
+      limit: toBytesFromKb(maxHeroPosterKb),
+      formatter: formatKb,
+    },
+    {
+      label: 'Hero media total',
+      actual: heroMediaTotalBytes,
+      limit: toBytesFromMb(maxHeroMediaTotalMb),
     },
     {
       label: 'Total source gallery images',

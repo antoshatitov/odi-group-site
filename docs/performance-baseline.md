@@ -38,7 +38,10 @@
 ### Media budgets (baseline-level)
 
 - Largest source image: `<= 16.5 MB`
-- Hero video: `<= 3.5 MB`
+- Hero video MP4: `<= 0.6 MB`
+- Hero video WebM: `<= 0.7 MB`
+- Hero poster (WebP/AVIF): `<= 90 KB` each
+- Hero media total: `<= 1.5 MB`
 - Total source gallery images: `<= 200 MB`
 - Largest optimized thumb/cover image: `<= 900 KB`
 - Largest optimized full image: `<= 1.2 MB`
