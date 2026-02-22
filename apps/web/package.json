@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "perf-check": "node scripts/perf-check.mjs",
+    "media-check": "node scripts/media-check.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{json,md}\"",
     "preview": "vite preview"
   },
