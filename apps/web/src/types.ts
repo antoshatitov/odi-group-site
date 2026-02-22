@@ -3,6 +3,25 @@ export type ImageAsset = {
   alt: string
 }
 
+export type ResponsiveImageFormat = {
+  src: string
+  width: number
+  height: number
+}
+
+export type ResponsiveImageVariant = {
+  avif?: ResponsiveImageFormat
+  webp: ResponsiveImageFormat
+  jpg: ResponsiveImageFormat
+}
+
+export type GalleryImageAsset = {
+  alt: string
+  thumb: ResponsiveImageVariant
+  cover: ResponsiveImageVariant
+  full: ResponsiveImageVariant
+}
+
 export type Project = {
   id: string
   name: string
@@ -27,6 +46,6 @@ export type GalleryItem = {
   title: string
   location: string
   description: string
-  cover: ImageAsset
-  photos: ImageAsset[]
+  cover: GalleryImageAsset
+  photos: GalleryImageAsset[]
 }

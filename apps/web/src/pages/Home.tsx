@@ -15,7 +15,7 @@ import GallerySection from '../sections/GallerySection'
 import HeroSection from '../sections/HeroSection'
 import ProjectsSection from '../sections/ProjectsSection'
 import ServicesSection from '../sections/ServicesSection'
-import type { GalleryItem, Project } from '../types'
+import type { GalleryItem, Project, ResponsiveImageFormat } from '../types'
 import { formatArea, formatPrice } from '../utils/format'
 
 const services = [
@@ -106,6 +106,18 @@ const buildSearchParams = (filters: ProjectFilters) => {
   return params
 }
 
+const buildSrcSet = (
+  small: ResponsiveImageFormat | undefined,
+  large: ResponsiveImageFormat | undefined,
+) => {
+  if (!small) return ''
+  if (!large || large.src === small.src) {
+    return `${small.src} ${small.width}w`
+  }
+
+  return `${small.src} ${small.width}w, ${large.src} ${large.width}w`
+}
+
 const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams])
@@ -170,6 +182,21 @@ const Home = () => {
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
   }, [activeGallery])
+
+  useEffect(() => {
+    if (!activeGallery || activeGallery.photos.length < 2) return
+
+    const photosCount = activeGallery.photos.length
+    const prevIndex = (activeGalleryIndex - 1 + photosCount) % photosCount
+    const nextIndex = (activeGalleryIndex + 1) % photosCount
+    const preloadIndexes = Array.from(new Set([prevIndex, nextIndex]))
+
+    for (const index of preloadIndexes) {
+      const preloadImage = new Image()
+      preloadImage.decoding = 'async'
+      preloadImage.src = activeGallery.photos[index].full.webp.src
+    }
+  }, [activeGallery, activeGalleryIndex])
 
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
@@ -445,14 +472,37 @@ const Home = () => {
               <div className="gallery-thumbs">
                 {activeGallery.photos.map((image, index) => (
                   <button
-                    key={image.src}
+                    key={image.full.jpg.src}
                     className="gallery-thumb"
                     type="button"
                     onClick={() => setActiveGalleryIndex(index)}
                     data-active={index === activeGalleryIndex}
                     aria-label={`Показать фото ${index + 1}`}
                   >
-                    <img src={image.src} alt={image.alt} loading="lazy" />
+                    <picture>
+                      {buildSrcSet(image.thumb.avif, image.cover.avif) ? (
+                        <source
+                          type="image/avif"
+                          srcSet={buildSrcSet(image.thumb.avif, image.cover.avif)}
+                          sizes="(max-width: 900px) 26vw, 96px"
+                        />
+                      ) : null}
+                      <source
+                        type="image/webp"
+                        srcSet={buildSrcSet(image.thumb.webp, image.cover.webp)}
+                        sizes="(max-width: 900px) 26vw, 96px"
+                      />
+                      <img
+                        src={image.thumb.jpg.src}
+                        srcSet={buildSrcSet(image.thumb.jpg, image.cover.jpg)}
+                        sizes="(max-width: 900px) 26vw, 96px"
+                        alt={image.alt}
+                        width={image.thumb.jpg.width}
+                        height={image.thumb.jpg.height}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </picture>
                   </button>
                 ))}
               </div>
@@ -463,7 +513,30 @@ const Home = () => {
         {activeGallery && activeGalleryPhoto && (
           <div className="gallery-modal">
             <div className="gallery-main">
-              <img src={activeGalleryPhoto.src} alt={activeGalleryPhoto.alt} />
+              <picture>
+                {buildSrcSet(activeGalleryPhoto.cover.avif, activeGalleryPhoto.full.avif) ? (
+                  <source
+                    type="image/avif"
+                    srcSet={buildSrcSet(activeGalleryPhoto.cover.avif, activeGalleryPhoto.full.avif)}
+                    sizes="(max-width: 900px) calc(100vw - 3rem), 62vw"
+                  />
+                ) : null}
+                <source
+                  type="image/webp"
+                  srcSet={buildSrcSet(activeGalleryPhoto.cover.webp, activeGalleryPhoto.full.webp)}
+                  sizes="(max-width: 900px) calc(100vw - 3rem), 62vw"
+                />
+                <img
+                  src={activeGalleryPhoto.full.jpg.src}
+                  srcSet={buildSrcSet(activeGalleryPhoto.cover.jpg, activeGalleryPhoto.full.jpg)}
+                  sizes="(max-width: 900px) calc(100vw - 3rem), 62vw"
+                  alt={activeGalleryPhoto.alt}
+                  width={activeGalleryPhoto.full.jpg.width}
+                  height={activeGalleryPhoto.full.jpg.height}
+                  loading="eager"
+                  decoding="async"
+                />
+              </picture>
               <button
                 className="gallery-nav gallery-nav-prev"
                 type="button"

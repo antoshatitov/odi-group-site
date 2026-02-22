@@ -1,8 +1,23 @@
-import type { GalleryItem } from '../types'
+import type { GalleryImageAsset, GalleryItem, ResponsiveImageFormat, ResponsiveImageVariant } from '../types'
 
-type RawImage = {
+type VariantName = 'thumb' | 'cover' | 'full'
+type ImageFormat = 'avif' | 'webp' | 'jpg'
+
+type ParsedImageModule = {
   path: string
   src: string
+  folder: string
+  stem: string
+  variant: VariantName
+  format: ImageFormat
+  width: number
+  height: number
+}
+
+type ImageRecord = {
+  path: string
+  stem: string
+  variants: Partial<Record<VariantName, Partial<Record<ImageFormat, ResponsiveImageFormat>>>>
 }
 
 const descriptionModules = import.meta.glob('../assets/builded/**/*.md', {
@@ -11,8 +26,8 @@ const descriptionModules = import.meta.glob('../assets/builded/**/*.md', {
   import: 'default',
 }) as Record<string, string>
 
-const imageModules = import.meta.glob(
-  '../assets/builded/**/*.{jpg,jpeg,JPG,JPEG,png,webp}',
+const optimizedImageModules = import.meta.glob(
+  '../assets/builded-optimized/**/*.{avif,webp,jpg,jpeg,JPG,JPEG}',
   {
     eager: true,
     import: 'default',
@@ -38,8 +53,34 @@ const parseDescription = (raw: string) => {
   return { title, location, description }
 }
 
-const sortImages = (images: RawImage[]) =>
-  images.slice().sort((a, b) => {
+const parseImageModule = (path: string, src: string): ParsedImageModule | null => {
+  const normalizedPath = normalizePath(path)
+  const folder = getFolderName(normalizedPath)
+  if (!folder) return null
+
+  const fileName = normalizedPath.split('/').at(-1)
+  if (!fileName) return null
+
+  const match = fileName.match(/(.+)__(thumb|cover|full)__([0-9]+)x([0-9]+)\.(avif|webp|jpe?g)$/i)
+  if (!match) return null
+
+  const [, stem, variant, width, height, rawFormat] = match
+  const normalizedFormat = rawFormat.toLowerCase() === 'jpeg' ? 'jpg' : rawFormat.toLowerCase()
+
+  return {
+    path: normalizedPath,
+    src,
+    folder,
+    stem,
+    variant: variant as VariantName,
+    format: normalizedFormat as ImageFormat,
+    width: Number(width),
+    height: Number(height),
+  }
+}
+
+const sortRecords = (records: ImageRecord[]) =>
+  records.slice().sort((a, b) => {
     const aIsTitle = /title_photo/i.test(a.path)
     const bIsTitle = /title_photo/i.test(b.path)
     if (aIsTitle !== bIsTitle) return aIsTitle ? -1 : 1
@@ -51,18 +92,75 @@ const sortImages = (images: RawImage[]) =>
     return a.path.localeCompare(b.path)
   })
 
-const formatAlt = (title: string, path: string, index: number) => {
-  if (/plan/i.test(path)) return `${title} — планировка`
+const formatAlt = (title: string, stem: string, index: number) => {
+  if (/plan/i.test(stem)) return `${title} — планировка`
   return `${title} — фото ${index + 1}`
 }
 
-const imagesByFolder = Object.entries(imageModules).reduce<Record<string, RawImage[]>>(
+const toVariant = (
+  entry: Partial<Record<ImageFormat, ResponsiveImageFormat>>,
+): ResponsiveImageVariant => {
+  const jpg = entry.jpg ?? entry.webp
+  const webp = entry.webp ?? entry.jpg
+
+  if (!jpg || !webp) {
+    throw new Error('Missing JPG/WEBP variant for optimized gallery image')
+  }
+
+  return {
+    avif: entry.avif,
+    webp,
+    jpg,
+  }
+}
+
+const toGalleryAsset = (
+  title: string,
+  record: ImageRecord,
+  index: number,
+): GalleryImageAsset => {
+  const thumbEntry = record.variants.thumb
+  const coverEntry = record.variants.cover
+  const fullEntry = record.variants.full
+
+  if (!thumbEntry || !coverEntry || !fullEntry) {
+    throw new Error(`Missing one of thumb/cover/full variants for image ${record.path}`)
+  }
+
+  return {
+    alt: formatAlt(title, record.stem, index),
+    thumb: toVariant(thumbEntry),
+    cover: toVariant(coverEntry),
+    full: toVariant(fullEntry),
+  }
+}
+
+const imagesByFolder = Object.entries(optimizedImageModules).reduce<Record<string, ImageRecord[]>>(
   (acc, [path, src]) => {
-    const folder = getFolderName(path)
-    if (!folder) return acc
-    const list = acc[folder] ?? []
-    list.push({ path, src })
-    acc[folder] = list
+    const parsed = parseImageModule(path, src)
+    if (!parsed) return acc
+
+    const folderRecords = acc[parsed.folder] ?? []
+    let existingRecord = folderRecords.find((record) => record.stem === parsed.stem)
+
+    if (!existingRecord) {
+      existingRecord = {
+        path: parsed.path,
+        stem: parsed.stem,
+        variants: {},
+      }
+      folderRecords.push(existingRecord)
+    }
+
+    const variantEntry = existingRecord.variants[parsed.variant] ?? {}
+    variantEntry[parsed.format] = {
+      src: parsed.src,
+      width: parsed.width,
+      height: parsed.height,
+    }
+
+    existingRecord.variants[parsed.variant] = variantEntry
+    acc[parsed.folder] = folderRecords
     return acc
   },
   {},
@@ -74,24 +172,21 @@ export const galleryItems: GalleryItem[] = Object.entries(descriptionModules)
     const folder = getFolderName(path)
     const { title, location, description } = parseDescription(raw)
     const safeTitle = title || folder || `Проект ${index + 1}`
-    const images = sortImages(imagesByFolder[folder] ?? [])
-    const coverImage =
-      images.find((image) => /title_photo/i.test(image.path)) ?? images[0]
-    const photos = images.map((image, photoIndex) => ({
-      src: image.src,
-      alt: formatAlt(safeTitle, image.path, photoIndex),
-    }))
+    const records = sortRecords(imagesByFolder[folder] ?? [])
+    const photos = records.map((record, photoIndex) => toGalleryAsset(safeTitle, record, photoIndex))
+    if (photos.length === 0) return null
+
+    const coverIndex = records.findIndex((record) => /title_photo/i.test(record.path))
+    const coverImage = coverIndex >= 0 ? photos[coverIndex] : photos[0]
 
     return {
       id: folder || `builded-${index + 1}`,
       title: safeTitle,
       location,
       description,
-      cover: {
-        src: coverImage?.src ?? '',
-        alt: `${safeTitle} — главное фото`,
-      },
+      cover: coverImage,
       photos,
     }
   })
+  .filter((item): item is GalleryItem => item !== null)
   .sort((a, b) => a.title.localeCompare(b.title, 'ru'))

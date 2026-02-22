@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 
 import Button from '../components/Button'
 import Container from '../components/Container'
@@ -9,16 +9,45 @@ type HeroSectionProps = {
   onOpenCalculator: () => void
 }
 
+type ConnectionInfo = {
+  saveData?: boolean
+  addEventListener?: (type: 'change', listener: () => void) => void
+  removeEventListener?: (type: 'change', listener: () => void) => void
+}
+
+const supportsReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+const supportsSaveData = () => {
+  if (typeof navigator === 'undefined') return false
+
+  const connection = (navigator as Navigator & { connection?: ConnectionInfo }).connection
+  return Boolean(connection?.saveData)
+}
+
+const shouldAutoplayHero = () => !supportsReducedMotion() && !supportsSaveData()
+
 const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
-  const heroVideoRef = useRef<HTMLVideoElement | null>(null)
+  const [allowAutoplay, setAllowAutoplay] = useState(shouldAutoplayHero)
 
   useEffect(() => {
-    const heroVideo = heroVideoRef.current
-    if (!heroVideo) return
+    if (typeof window === 'undefined') return
 
-    heroVideo.muted = true
-    heroVideo.setAttribute('muted', '')
-    void heroVideo.play().catch(() => undefined)
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const connection = (navigator as Navigator & { connection?: ConnectionInfo }).connection
+    const updateAutoplay = () => {
+      setAllowAutoplay(!(mediaQuery.matches || Boolean(connection?.saveData)))
+    }
+
+    updateAutoplay()
+
+    mediaQuery.addEventListener('change', updateAutoplay)
+    connection?.addEventListener?.('change', updateAutoplay)
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateAutoplay)
+      connection?.removeEventListener?.('change', updateAutoplay)
+    }
   }, [])
 
   return (
@@ -64,15 +93,15 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
           <div className="hero-visual">
             <div className="hero-image">
               <video
-                ref={heroVideoRef}
-                autoPlay
+                autoPlay={allowAutoplay}
                 muted
                 loop
                 playsInline
-                preload="metadata"
-                poster="/images/image.jpg"
+                preload={allowAutoplay ? 'metadata' : 'none'}
+                poster="/images/hero-poster.webp"
                 aria-label="Современный дом в Калининградской области"
               >
+                <source src="/videos/hero-video.webm" type="video/webm" />
                 <source src="/videos/hero-video.mp4" type="video/mp4" />
               </video>
             </div>

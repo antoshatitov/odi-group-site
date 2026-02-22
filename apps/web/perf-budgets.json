@@ -1,0 +1,26 @@
+{
+  "assetBudgets": {
+    "maxMainJsGzipKb": 100,
+    "maxMainCssKb": 32,
+    "maxTotalDistAssetsKb": 200000,
+    "maxLargestDistAssetKb": 17000
+  },
+  "mediaBudgets": {
+    "maxOriginalImageMb": 16.5,
+    "maxHeroVideoMp4Mb": 0.6,
+    "maxHeroVideoWebmMb": 0.7,
+    "maxHeroPosterKb": 90,
+    "maxHeroMediaTotalMb": 1.5,
+    "maxGallerySourceTotalMb": 200,
+    "maxOptimizedThumbOrCoverKb": 900,
+    "maxOptimizedFullMb": 1.2,
+    "maxOptimizedGalleryTotalMb": 50
+  },
+  "targets": {
+    "startupTotalBytesMb": "2-3",
+    "startupVisibleImagesMb": "<1",
+    "heroMediaMb": "<1.5",
+    "galleryOpenBytesMb": "3-6",
+    "runtimeCoverOrThumbMaxMb": "<1"
+  }
+}

@@ -5,7 +5,15 @@ import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 
+const readEnv = (value) => {
+  if (!value) return ''
+  return value.trim()
+}
+
+const TRUST_PROXY = process.env.TRUST_PROXY !== 'false'
+
 const server = Fastify({
+  trustProxy: TRUST_PROXY,
   logger: {
     level: 'info',
     redact: ['req.headers.authorization'],
@@ -13,10 +21,6 @@ const server = Fastify({
 })
 
 const REQUIRED_ENV = ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID']
-const readEnv = (value) => {
-  if (!value) return ''
-  return value.trim()
-}
 const missingEnv = REQUIRED_ENV.filter((key) => !readEnv(process.env[key]))
 
 if (missingEnv.length > 0) {
@@ -31,7 +35,17 @@ const CALC_CHAT_ID = readEnv(process.env.TELEGRAM_CALC_CHAT_ID) || TELEGRAM_CHAT
 const QUARANTINE_CHAT_ID = readEnv(process.env.TELEGRAM_QUARANTINE_CHAT_ID) || CALC_CHAT_ID
 const LOG_HASH_SALT = process.env.LOG_HASH_SALT || 'odi-calc'
 const CAPTCHA_ENABLED = process.env.CAPTCHA_ENABLED === 'true'
+const CAPTCHA_SECRET_KEY = readEnv(process.env.CAPTCHA_SECRET_KEY)
+const CAPTCHA_VERIFY_URL =
+  readEnv(process.env.CAPTCHA_VERIFY_URL) || 'https://www.google.com/recaptcha/api/siteverify'
+const CAPTCHA_EXPECTED_HOSTNAME = readEnv(process.env.CAPTCHA_EXPECTED_HOSTNAME)
+const TELEGRAM_TIMEOUT_MS = Number(process.env.TELEGRAM_TIMEOUT_MS || 5000)
+const TELEGRAM_RETRY_ATTEMPTS = Number(process.env.TELEGRAM_RETRY_ATTEMPTS || 2)
+const TELEGRAM_RETRY_BASE_MS = Number(process.env.TELEGRAM_RETRY_BASE_MS || 400)
+const IN_MEMORY_LIMITER_MAX_KEYS = Number(process.env.IN_MEMORY_LIMITER_MAX_KEYS || 5000)
+const IN_MEMORY_DEDUP_MAX_KEYS = Number(process.env.IN_MEMORY_DEDUP_MAX_KEYS || 3000)
 const PORT = Number(process.env.PORT || 8080)
+const serverStartedAt = Date.now()
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -146,6 +160,8 @@ const CALC_PACKAGE_RATES = {
 
 const CALC_DEDUP_WINDOW_MS = 30 * 60 * 1000
 const CALC_FAST_SUBMIT_MS = 4000
+const CALC_MAX_OPEN_WINDOW_MS = 2 * 60 * 60 * 1000
+const CALC_ALLOWED_FUTURE_SKEW_MS = 2 * 60 * 1000
 
 const calcMetrics = {
   total: 0,
@@ -194,6 +210,144 @@ const hashValue = (value) => {
   return crypto.createHash('sha256').update(`${value}|${LOG_HASH_SALT}`).digest('hex').slice(0, 12)
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const parseRetryAfterMs = (value) => {
+  if (!value) return null
+  const seconds = Number(value)
+  if (!Number.isNaN(seconds) && Number.isFinite(seconds)) {
+    return Math.max(0, Math.round(seconds * 1000))
+  }
+
+  const dateTime = Date.parse(value)
+  if (Number.isNaN(dateTime)) return null
+
+  return Math.max(0, dateTime - Date.now())
+}
+
+const sendTelegramMessageWithRetry = async ({ botToken, chatId, text, logContext }) => {
+  if (!botToken || !chatId) {
+    return { ok: false, skipped: true }
+  }
+
+  const maxAttempts = Math.max(1, TELEGRAM_RETRY_ATTEMPTS + 1)
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT_MS)
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          disable_web_page_preview: true,
+        }),
+        signal: controller.signal,
+      })
+
+      if (response.ok) {
+        return { ok: true }
+      }
+
+      const isRetryable = response.status === 429 || response.status >= 500
+      let responseText = ''
+      try {
+        responseText = await response.text()
+      } catch {
+        responseText = ''
+      }
+
+      if (!isRetryable || attempt >= maxAttempts) {
+        server.log.error(
+          {
+            status: response.status,
+            error: responseText.slice(0, 300),
+            attempt,
+            maxAttempts,
+            logContext,
+          },
+          'Telegram API error',
+        )
+        return { ok: false, status: response.status }
+      }
+
+      const retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'))
+      const fallbackDelayMs = TELEGRAM_RETRY_BASE_MS * 2 ** (attempt - 1)
+      await sleep(retryAfterMs ?? fallbackDelayMs)
+      continue
+    } catch (error) {
+      const isAbort = error?.name === 'AbortError'
+      if (attempt >= maxAttempts) {
+        server.log.error(
+          {
+            error: error?.message,
+            attempt,
+            maxAttempts,
+            timeout: isAbort,
+            logContext,
+          },
+          'Telegram request failed',
+        )
+        return { ok: false }
+      }
+
+      await sleep(TELEGRAM_RETRY_BASE_MS * 2 ** (attempt - 1))
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
+  return { ok: false }
+}
+
+const verifyCaptchaToken = async ({ token, ip }) => {
+  if (!CAPTCHA_ENABLED) return { ok: true, skipped: true }
+  if (!CAPTCHA_SECRET_KEY) return { ok: false, misconfigured: true }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT_MS)
+
+  try {
+    const payload = new URLSearchParams({
+      secret: CAPTCHA_SECRET_KEY,
+      response: token,
+      remoteip: ip || '',
+    })
+
+    const response = await fetch(CAPTCHA_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: payload,
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      return { ok: false, transient: true }
+    }
+
+    const data = await response.json()
+    if (!data?.success) {
+      return { ok: false }
+    }
+
+    if (CAPTCHA_EXPECTED_HOSTNAME && data.hostname && data.hostname !== CAPTCHA_EXPECTED_HOSTNAME) {
+      return { ok: false }
+    }
+
+    return { ok: true }
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      return { ok: false, transient: true }
+    }
+    return { ok: false, transient: true }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 const buildCalcMessage = ({
   timestamp,
   floors,
@@ -215,16 +369,49 @@ const buildCalcMessage = ({
   ].join('\n')
 }
 
-const createSlidingWindowLimiter = (limits) => {
+const createSlidingWindowLimiter = (limits, options = {}) => {
   const events = new Map()
   const maxWindow = Math.max(...limits.map((limit) => limit.windowMs))
+  const maxKeys = options.maxKeys || IN_MEMORY_LIMITER_MAX_KEYS
+  let lastCleanupAt = 0
+
+  const pruneExpired = (now) => {
+    if (now - lastCleanupAt < 10 * 1000) return
+    lastCleanupAt = now
+
+    for (const [key, history] of events.entries()) {
+      const fresh = history.filter((timestamp) => now - timestamp < maxWindow)
+      if (fresh.length === 0) {
+        events.delete(key)
+      } else {
+        events.set(key, fresh)
+      }
+    }
+  }
+
+  const pruneOverflow = () => {
+    if (events.size <= maxKeys) return
+    const entries = [...events.entries()].sort((a, b) => {
+      const aLatest = a[1][a[1].length - 1] || 0
+      const bLatest = b[1][b[1].length - 1] || 0
+      return aLatest - bLatest
+    })
+
+    for (const [key] of entries) {
+      if (events.size <= maxKeys) break
+      events.delete(key)
+    }
+  }
 
   const check = (key, now = Date.now()) => {
     if (!key) return { allowed: true }
+
+    pruneExpired(now)
     const history = events.get(key) || []
     const fresh = history.filter((timestamp) => now - timestamp < maxWindow)
     fresh.push(now)
     events.set(key, fresh)
+    pruneOverflow()
 
     for (const limit of limits) {
       const count = fresh.filter((timestamp) => now - timestamp < limit.windowMs).length
@@ -263,6 +450,16 @@ const isCalcDuplicate = (hashKey, now) => {
   if (lastSeen && now - lastSeen < CALC_DEDUP_WINDOW_MS) {
     return true
   }
+
+  if (calcDedupStore.size >= IN_MEMORY_DEDUP_MAX_KEYS) {
+    const oldestEntries = [...calcDedupStore.entries()].sort((a, b) => a[1] - b[1])
+    const targetSize = Math.floor(IN_MEMORY_DEDUP_MAX_KEYS * 0.9)
+    for (const [key] of oldestEntries) {
+      if (calcDedupStore.size <= targetSize) break
+      calcDedupStore.delete(key)
+    }
+  }
+
   calcDedupStore.set(hashKey, now)
   return false
 }
@@ -300,33 +497,12 @@ const logCalcQuarantine = ({ reason, ip, phone, userAgent, details }) => {
 }
 
 const sendCalculatorMessage = async (chatId, text) => {
-  if (!CALC_BOT_TOKEN || !chatId) {
-    return { ok: false, skipped: true }
-  }
-
-  const response = await fetch(`https://api.telegram.org/bot${CALC_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      disable_web_page_preview: true,
-    }),
+  return sendTelegramMessageWithRetry({
+    botToken: CALC_BOT_TOKEN,
+    chatId,
+    text,
+    logContext: 'calculator',
   })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    server.log.error(
-      {
-        status: response.status,
-        error: errorText.slice(0, 200),
-      },
-      'Telegram API error (calculator)',
-    )
-    return { ok: false }
-  }
-
-  return { ok: true }
 }
 
 const costSchema = {
@@ -355,6 +531,34 @@ const costSchema = {
       captchaToken: { type: 'string', maxLength: 200 },
     },
   },
+}
+
+const validateCalcTimestamps = ({ openedAt, submittedAt, now }) => {
+  const openedAtNum = Number(openedAt)
+  const submittedAtNum = Number(submittedAt)
+
+  if (!Number.isFinite(openedAtNum) || !Number.isFinite(submittedAtNum)) {
+    return { valid: false, reason: 'invalid_timestamp_type' }
+  }
+
+  if (openedAtNum <= 0 || submittedAtNum <= 0) {
+    return { valid: false, reason: 'invalid_timestamp_value' }
+  }
+
+  if (openedAtNum > now + CALC_ALLOWED_FUTURE_SKEW_MS) {
+    return { valid: false, reason: 'opened_at_in_future' }
+  }
+
+  if (submittedAtNum > now + CALC_ALLOWED_FUTURE_SKEW_MS) {
+    return { valid: false, reason: 'submitted_at_in_future' }
+  }
+
+  const submitDelta = submittedAtNum - openedAtNum
+  if (submitDelta < 0) {
+    return { valid: false, reason: 'submitted_before_opened' }
+  }
+
+  return { valid: true, submitDelta }
 }
 
 server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply) => {
@@ -415,6 +619,28 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
     return
   }
 
+  if (CAPTCHA_ENABLED) {
+    const captchaResult = await verifyCaptchaToken({ token: captchaToken, ip })
+    if (!captchaResult.ok) {
+      calcMetrics.blocked += 1
+      logCalcEvent({
+        event: 'calc_blocked',
+        reason: captchaResult.misconfigured ? 'captcha_misconfigured' : 'captcha_failed',
+        ip,
+        phone: normalizedPhone,
+        userAgent,
+      })
+
+      if (captchaResult.transient || captchaResult.misconfigured) {
+        reply.code(503).send({ error: 'Captcha verification unavailable' })
+        return
+      }
+
+      reply.code(400).send({ error: 'Captcha verification failed' })
+      return
+    }
+  }
+
   const ipCheck = calcIpLimiter.check(ip, now)
   if (!ipCheck.allowed) {
     calcMetrics.blocked += 1
@@ -455,7 +681,21 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
     return
   }
 
-  const submitDelta = Number(submittedAt) - Number(openedAt)
+  const timestampValidation = validateCalcTimestamps({ openedAt, submittedAt, now })
+  if (!timestampValidation.valid) {
+    calcMetrics.blocked += 1
+    logCalcEvent({
+      event: 'calc_blocked',
+      reason: timestampValidation.reason,
+      ip,
+      phone: normalizedPhone,
+      userAgent,
+    })
+    reply.code(400).send({ error: 'Invalid timing fields' })
+    return
+  }
+
+  const submitDelta = timestampValidation.submitDelta
   const quarantineReasons = []
   const addQuarantineReason = (reason) => {
     if (reason && !quarantineReasons.includes(reason)) {
@@ -463,8 +703,12 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
     }
   }
 
-  if (Number.isFinite(submitDelta) && submitDelta < CALC_FAST_SUBMIT_MS) {
+  if (submitDelta < CALC_FAST_SUBMIT_MS) {
     addQuarantineReason('fast_submit')
+  }
+
+  if (submitDelta > CALC_MAX_OPEN_WINDOW_MS) {
+    addQuarantineReason('stale_form')
   }
 
   if (clientSuspected) {
@@ -580,50 +824,36 @@ server.post('/api/lead', { schema: leadSchema }, async (request, reply) => {
   const botToken = isConsultation ? CALC_BOT_TOKEN : TELEGRAM_BOT_TOKEN
   const chatId = isConsultation ? CALC_CHAT_ID : TELEGRAM_CHAT_ID
 
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${botToken}/sendMessage`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: telegramMessage,
-          disable_web_page_preview: true,
-        }),
-      },
-    )
+  const sendResult = await sendTelegramMessageWithRetry({
+    botToken,
+    chatId,
+    text: telegramMessage,
+    logContext: isConsultation ? 'lead_consultation' : 'lead',
+  })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      server.log.error(
-        {
-          status: response.status,
-          error: errorText.slice(0, 200),
-        },
-        'Telegram API error',
-      )
-      reply.code(502).send({ error: 'Failed to deliver message' })
-      return
-    }
-
-    server.log.info(
-      {
-        event: 'lead_sent',
-        projectId: projectId || null,
-        hasMessage: Boolean(normalizedMessage),
-      },
-      'Lead delivered',
-    )
-
-    reply.code(200).send({ ok: true })
-  } catch (error) {
-    server.log.error({ error: error?.message }, 'Lead delivery failed')
-    reply.code(500).send({ error: 'Server error' })
+  if (!sendResult.ok) {
+    reply.code(502).send({ error: 'Failed to deliver message' })
+    return
   }
+
+  server.log.info(
+    {
+      event: 'lead_sent',
+      projectId: projectId || null,
+      hasMessage: Boolean(normalizedMessage),
+    },
+    'Lead delivered',
+  )
+
+  reply.code(200).send({ ok: true })
 })
 
-server.get('/api/health', async () => ({ ok: true }))
+server.get('/api/health', async () => ({
+  ok: true,
+  uptimeSec: Math.round((Date.now() - serverStartedAt) / 1000),
+  calcMetrics,
+  memory: process.memoryUsage(),
+}))
 
 server.setErrorHandler((error, _request, reply) => {
   if (error.validation) {
@@ -640,9 +870,29 @@ server.setErrorHandler((error, _request, reply) => {
   reply.code(500).send({ error: 'Server error' })
 })
 
+const shutdown = async (signal) => {
+  server.log.info({ signal }, 'Graceful shutdown started')
+  try {
+    await server.close()
+    server.log.info({ signal }, 'Server closed gracefully')
+    process.exit(0)
+  } catch (error) {
+    server.log.error({ signal, error: error?.message }, 'Graceful shutdown failed')
+    process.exit(1)
+  }
+}
+
+process.on('SIGINT', () => {
+  void shutdown('SIGINT')
+})
+
+process.on('SIGTERM', () => {
+  void shutdown('SIGTERM')
+})
+
 try {
   await server.listen({ port: PORT, host: '0.0.0.0' })
-  server.log.info(`Lead API listening on ${PORT}`)
+  server.log.info({ port: PORT, trustProxy: TRUST_PROXY }, 'Lead API listening')
 } catch (error) {
   server.log.error({ error: error.message }, 'Failed to start server')
   process.exit(1)
