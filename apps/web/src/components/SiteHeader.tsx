@@ -43,7 +43,7 @@ const SiteHeader = () => {
     <header className="site-header">
       <div className="container header-inner">
         <a className="logo" href="/">
-          <img src="/images/logo.png" alt="ОДИ" width={1000} height={1000} />
+          <img src="/images/logo.png" alt="ОДИ" width={240} height={70} />
           <small>строительная компания</small>
         </a>
         <nav className="nav-links" aria-label="Основная навигация">
@@ -86,7 +86,7 @@ const SiteHeader = () => {
           <div className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}>
             <div className="mobile-nav-header">
               <a className="logo" href="/" onClick={() => setOpen(false)}>
-                <img src="/images/logo.png" alt="ОДИ" width={1000} height={1000} />
+                <img src="/images/logo.png" alt="ОДИ" width={240} height={70} />
                 <small>строительная компания</small>
               </a>
               <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>

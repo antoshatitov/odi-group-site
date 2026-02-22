@@ -1,12 +1,13 @@
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 
 import SiteFooter from './components/SiteFooter'
 import SiteHeader from './components/SiteHeader'
-import Consent from './pages/Consent'
-import Cookies from './pages/Cookies'
 import Home from './pages/Home'
-import Policy from './pages/Policy'
+
+const Policy = lazy(() => import('./pages/Policy'))
+const Consent = lazy(() => import('./pages/Consent'))
+const Cookies = lazy(() => import('./pages/Cookies'))
 
 const ScrollToTop = () => {
   const { pathname } = useLocation()
@@ -27,12 +28,14 @@ const App = () => {
       </a>
       <SiteHeader />
       <main id="main-content">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/policy" element={<Policy />} />
-          <Route path="/consent" element={<Consent />} />
-          <Route path="/cookies" element={<Cookies />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/policy" element={<Policy />} />
+            <Route path="/consent" element={<Consent />} />
+            <Route path="/cookies" element={<Cookies />} />
+          </Routes>
+        </Suspense>
       </main>
       <SiteFooter />
     </div>

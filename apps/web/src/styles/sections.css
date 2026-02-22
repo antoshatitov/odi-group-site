@@ -75,6 +75,10 @@
   transform: scaleX(1);
 }
 
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -131,6 +135,12 @@
   align-items: center;
   min-height: 2.75rem;
   padding: 0.35rem 0.2rem;
+}
+
+.mobile-nav-links a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-s);
 }
 
 .mobile-nav-actions {
@@ -505,6 +515,13 @@
 .gallery-nav:hover {
   background: rgba(31, 95, 83, 0.85);
   transform: translateY(-50%) scale(1.04);
+}
+
+.gallery-nav:focus-visible {
+  outline: none;
+  background: rgba(31, 95, 83, 0.85);
+  transform: translateY(-50%) scale(1.04);
+  box-shadow: var(--focus-ring);
 }
 
 .gallery-nav-prev {

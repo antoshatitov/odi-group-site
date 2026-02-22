@@ -404,6 +404,8 @@
 .section {
   padding: var(--space-9) 0;
   position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 900px;
 }
 
 .section-toned {
