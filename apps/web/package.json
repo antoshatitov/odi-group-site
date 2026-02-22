@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "media:optimize": "node scripts/optimize-media.mjs",
     "perf-check": "node scripts/perf-check.mjs",
     "media-check": "node scripts/media-check.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{json,md}\"",
@@ -29,6 +30,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "prettier": "^3.3.3",
+    "sharp": "^0.34.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^6.0.0"

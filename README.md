@@ -61,6 +61,7 @@ npm run build:web
 Локальные проверки бюджетов:
 
 ```bash
+npm --workspace apps/web run media:optimize
 npm --workspace apps/web run perf-check
 npm --workspace apps/web run media-check
 ```
@@ -70,6 +71,9 @@ npm --workspace apps/web run media-check
 - размер ключевых build-ассетов (`dist/assets`),
 - размер hero video,
 - вес и суммарный объём исходных изображений галереи.
+
+Генерация оптимизированных изображений выполняется в `apps/web/src/assets/builded-optimized` на основе
+исходников из `apps/web/src/assets/builded`.
 
 CI (GitHub Actions) падает, если бюджеты из `apps/web/perf-budgets.json` нарушены.
 

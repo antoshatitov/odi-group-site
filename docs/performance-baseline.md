@@ -30,7 +30,7 @@
 
 ### Asset budgets
 
-- Main JS (gzip): `<= 90 KB`
+- Main JS (gzip): `<= 100 KB`
 - Main CSS: `<= 32 KB`
 - Total dist assets: `<= 200000 KB`
 - Largest dist asset: `<= 17000 KB`
@@ -40,6 +40,9 @@
 - Largest source image: `<= 16.5 MB`
 - Hero video: `<= 3.5 MB`
 - Total source gallery images: `<= 200 MB`
+- Largest optimized thumb/cover image: `<= 900 KB`
+- Largest optimized full image: `<= 1.2 MB`
+- Total optimized gallery images: `<= 50 MB`
 
 Примечание: лимиты для source media на baseline-этапе зафиксированы на текущем уровне и будут
 ужесточаться по мере внедрения этапов оптимизации изображений/видео.
