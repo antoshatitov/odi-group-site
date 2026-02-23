@@ -4,6 +4,8 @@ import type { GalleryItem, ResponsiveImageFormat } from '../types'
 
 type GallerySectionProps = {
   items: GalleryItem[]
+  isLoading?: boolean
+  loadError?: string | null
   onOpenGallery: (item: GalleryItem) => void
 }
 
@@ -21,8 +23,14 @@ const buildSrcSet = (
 
 const GallerySection = ({
   items,
+  isLoading = false,
+  loadError = null,
   onOpenGallery,
 }: GallerySectionProps) => {
+  const showSkeleton = isLoading && items.length === 0
+  const showError = Boolean(loadError) && !isLoading && items.length === 0
+  const showEmpty = !isLoading && !showError && items.length === 0
+
   return (
     <Section id="gallery" tone="toned">
       <Container>
@@ -79,7 +87,26 @@ const GallerySection = ({
                 </div>
               </button>
             ))}
+            {showSkeleton
+              ? Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={`gallery-skeleton-${index + 1}`}
+                    className="gallery-card"
+                    aria-hidden="true"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    <div className="gallery-media" />
+                    <div className="gallery-body">
+                      <span className="gallery-location">Загрузка</span>
+                      <h3 className="gallery-title">Подбираем объекты</h3>
+                      <p className="gallery-description">Загружаем реализованные проекты.</p>
+                    </div>
+                  </div>
+                ))
+              : null}
           </div>
+          {showError ? <p className="muted">Не удалось загрузить галерею. Обновите страницу.</p> : null}
+          {showEmpty ? <p className="muted">Реализованные объекты появятся здесь.</p> : null}
         </div>
       </Container>
     </Section>

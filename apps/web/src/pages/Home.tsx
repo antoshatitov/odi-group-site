@@ -8,7 +8,6 @@ import LeadForm from '../components/LeadForm'
 import Modal from '../components/Modal'
 import Section from '../components/Section'
 import { SHOW_PROJECTS } from '../config/featureFlags'
-import { galleryItems } from '../data/gallery'
 import { projects } from '../data/projects'
 import ContactsSection from '../sections/ContactsSection'
 import GallerySection from '../sections/GallerySection'
@@ -121,6 +120,9 @@ const buildSrcSet = (
 const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams])
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
+  const [isGalleryLoading, setIsGalleryLoading] = useState(true)
+  const [galleryLoadError, setGalleryLoadError] = useState<string | null>(null)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
@@ -129,6 +131,35 @@ const Home = () => {
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadGalleryItems = async () => {
+      try {
+        const galleryModule = await import('../data/gallery')
+        if (!mounted) return
+        setGalleryItems(galleryModule.galleryItems)
+        setGalleryLoadError(null)
+      } catch (error) {
+        if (!mounted) return
+        setGalleryItems([])
+        setGalleryLoadError(
+          error instanceof Error ? error.message : 'Не удалось загрузить галерею',
+        )
+      } finally {
+        if (mounted) {
+          setIsGalleryLoading(false)
+        }
+      }
+    }
+
+    loadGalleryItems()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   useEffect(() => {
@@ -238,7 +269,12 @@ const Home = () => {
     <>
       <HeroSection onOpenCalculator={() => setIsCalculatorOpen(true)} />
 
-      <GallerySection items={galleryItems} onOpenGallery={openGallery} />
+      <GallerySection
+        items={galleryItems}
+        isLoading={isGalleryLoading}
+        loadError={galleryLoadError}
+        onOpenGallery={openGallery}
+      />
 
       <Section id="about">
         <Container>
