@@ -47,27 +47,33 @@ const services = [
 const steps = [
   {
     title: 'Заявка и встреча',
-    text: 'Обсуждаем задачи, участок, бюджет и сроки. Подбираем проекты и решения.',
+    text: 'Проводим консультацию, анализируем участок и собираем чёткое техническое задание.',
+    result: 'Персональный план старта и понятные вводные по бюджету',
   },
   {
     title: 'Проект и смета',
-    text: 'Готовим планировки, спецификацию и прозрачную смету по этапам.',
+    text: 'Подбираем планировку, материалы и готовим смету с вариантами оптимизации.',
+    result: 'Проект и прозрачная экономика без скрытых работ',
   },
   {
     title: 'Договор и график',
-    text: 'ФИКСИРУЕМ СРОКИ, ЭТАПЫ И ОТВЕТСТВЕННОСТЬ.',
+    text: 'Фиксируем цену, этапы работ и ответственность сторон в договоре.',
+    result: 'Стоимость и календарь работ юридически закреплены',
   },
   {
     title: 'Строительство',
-    text: 'Ведём работы по графику, обеспечиваем контроль качества и фотоотчёты.',
+    text: 'Строим по графику и отправляем фото- и видеоотчёты после ключевых работ.',
+    result: 'Вы видите прогресс в реальном времени и контролируете качество',
   },
   {
     title: 'Инженерные системы',
-    text: 'Монтируем инженерные сети, проводим тестирование и настройку.',
+    text: 'Монтируем и тестируем отопление, водоснабжение, вентиляцию и электрику.',
+    result: 'Все системы проверены и готовы к безопасной эксплуатации',
   },
   {
     title: 'Сдача и сервис',
-    text: 'Передаём объект и документацию, обеспечиваем гарантийный контроль.',
+    text: 'Передаём дом, комплект документов и подключаем гарантийное сопровождение.',
+    result: 'Вы заезжаете в готовый дом и остаётесь с поддержкой команды',
   },
 ]
 
@@ -127,7 +133,9 @@ const Home = () => {
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
+  const [isProcessVisible, setIsProcessVisible] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const processTimelineRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
@@ -195,6 +203,33 @@ const Home = () => {
 
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    const timeline = processTimelineRef.current
+    if (!timeline || isProcessVisible) return
+
+    if (!('IntersectionObserver' in window)) {
+      setIsProcessVisible(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsProcessVisible(true)
+          observer.disconnect()
+        }
+      },
+      {
+        threshold: 0.2,
+        rootMargin: '0px 0px -12% 0px',
+      },
+    )
+
+    observer.observe(timeline)
+
+    return () => observer.disconnect()
+  }, [isProcessVisible])
 
   useEffect(() => {
     if (!activeGallery || activeGallery.photos.length === 0) return
@@ -318,19 +353,36 @@ const Home = () => {
 
       <ServicesSection services={services} />
 
-      <Section id="process">
+      <Section id="process" tone="toned">
         <Container>
-          <div className="stack" style={{ gap: 'var(--space-6)' }}>
-            <div className="stack">
+          <div className="process-wrap stack">
+            <div className="process-heading stack">
               <span className="eyebrow">Принцип работы</span>
-              <h2 className="h2">Понятный процесс, который можно контролировать</h2>
+              <h2 className="h2">От заявки до ключей — поэтапно и прозрачно</h2>
+              <p className="muted process-lead">
+                На каждом этапе заранее фиксируем итог, который вы получаете, — без сюрпризов и
+                размытых обещаний.
+              </p>
             </div>
-            <div className="process-grid">
+            <div
+              ref={processTimelineRef}
+              className={`process-timeline ${isProcessVisible ? 'process-timeline-visible' : ''}`.trim()}
+              role="list"
+            >
               {steps.map((step, index) => (
-                <Card key={step.title} className="process-step">
-                  <span>Этап {index + 1}</span>
+                <Card
+                  key={step.title}
+                  className={`process-step ${isProcessVisible ? 'process-step-visible' : ''}`.trim()}
+                  data-step={index + 1}
+                  role="listitem"
+                  style={{ transitionDelay: `${120 + index * 80}ms` }}
+                >
                   <strong>{step.title}</strong>
-                  <span className="muted">{step.text}</span>
+                  <span className="muted process-step-text">{step.text}</span>
+                  <div className="process-step-result">
+                    <span>Что получаете</span>
+                    <strong>{step.result}</strong>
+                  </div>
                 </Card>
               ))}
             </div>

@@ -135,6 +135,21 @@ const toGalleryAsset = (
   }
 }
 
+const getCoverIndex = (title: string, records: ImageRecord[]) => {
+  if (/88\s*м[²2]/iu.test(title)) {
+    const preferredExteriorIndex = records.findIndex((record) => /generated-image-2/i.test(record.stem))
+    if (preferredExteriorIndex >= 0) return preferredExteriorIndex
+
+    const fallbackExteriorIndex = records.findIndex(
+      (record) => !/title_photo/i.test(record.stem) && !/plan/i.test(record.stem),
+    )
+    if (fallbackExteriorIndex >= 0) return fallbackExteriorIndex
+  }
+
+  const titleIndex = records.findIndex((record) => /title_photo/i.test(record.stem))
+  return titleIndex >= 0 ? titleIndex : 0
+}
+
 const imagesByFolder = Object.entries(optimizedImageModules).reduce<Record<string, ImageRecord[]>>(
   (acc, [path, src]) => {
     const parsed = parseImageModule(path, src)
@@ -176,8 +191,8 @@ export const galleryItems: GalleryItem[] = Object.entries(descriptionModules)
     const photos = records.map((record, photoIndex) => toGalleryAsset(safeTitle, record, photoIndex))
     if (photos.length === 0) return null
 
-    const coverIndex = records.findIndex((record) => /title_photo/i.test(record.path))
-    const coverImage = coverIndex >= 0 ? photos[coverIndex] : photos[0]
+    const coverIndex = getCoverIndex(safeTitle, records)
+    const coverImage = photos[coverIndex] ?? photos[0]
 
     return {
       id: folder || `builded-${index + 1}`,
