@@ -37,9 +37,7 @@ const GallerySection = ({
         <div className="stack" style={{ gap: 'var(--space-6)' }}>
           <div className="stack">
             <span className="eyebrow">Построено нами</span>
-            <h2 className="h2">
-              Реализованные объекты в Калининградской области
-            </h2>
+            <h2 className="h2">Реализованные объекты в Калининградской области</h2>
           </div>
           <div className="gallery-grid">
             {items.map((item) => (
@@ -56,18 +54,18 @@ const GallerySection = ({
                       <source
                         type="image/avif"
                         srcSet={buildSrcSet(item.cover.thumb.avif, item.cover.cover.avif)}
-                        sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                        sizes="(max-width: 640px) calc(100vw - 2.4rem), (max-width: 1024px) calc((100vw - 4.4rem) / 2), 23rem"
                       />
                     ) : null}
                     <source
                       type="image/webp"
                       srcSet={buildSrcSet(item.cover.thumb.webp, item.cover.cover.webp)}
-                      sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                      sizes="(max-width: 640px) calc(100vw - 2.4rem), (max-width: 1024px) calc((100vw - 4.4rem) / 2), 23rem"
                     />
                     <img
                       src={item.cover.cover.jpg.src}
                       srcSet={buildSrcSet(item.cover.thumb.jpg, item.cover.cover.jpg)}
-                      sizes="(max-width: 680px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                      sizes="(max-width: 640px) calc(100vw - 2.4rem), (max-width: 1024px) calc((100vw - 4.4rem) / 2), 23rem"
                       alt={item.cover.alt}
                       width={item.cover.cover.jpg.width}
                       height={item.cover.cover.jpg.height}
@@ -105,7 +103,9 @@ const GallerySection = ({
                 ))
               : null}
           </div>
-          {showError ? <p className="muted">Не удалось загрузить галерею. Обновите страницу.</p> : null}
+          {showError ? (
+            <p className="muted">Не удалось загрузить галерею. Обновите страницу.</p>
+          ) : null}
           {showEmpty ? <p className="muted">Реализованные объекты появятся здесь.</p> : null}
         </div>
       </Container>

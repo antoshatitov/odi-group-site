@@ -108,7 +108,8 @@
   font-size: var(--text-xs);
   border: 1px solid rgba(18, 25, 23, 0.16);
   background: rgba(255, 255, 255, 0.8);
-  transition: background var(--duration-fast) var(--ease-out),
+  transition:
+    background var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }
@@ -169,7 +170,9 @@
   background: rgba(255, 255, 255, 0.9);
   padding: 0.7rem 0.9rem;
   font-size: var(--text-sm);
-  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .textarea {
@@ -252,7 +255,8 @@
   border: 1px solid rgba(18, 25, 23, 0.12);
   background: rgba(255, 255, 255, 0.75);
   padding: var(--space-3);
-  transition: border-color var(--duration-fast) var(--ease-out),
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     background var(--duration-fast) var(--ease-out);
 }
@@ -288,7 +292,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background var(--duration-fast) var(--ease-out),
+  transition:
+    background var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
 }
 
@@ -361,6 +366,13 @@
   box-shadow: var(--shadow-strong);
 }
 
+@supports (height: 100dvh) {
+  .modal {
+    height: min(88dvh, calc(100dvh - (var(--space-5) * 2)));
+    max-height: 88dvh;
+  }
+}
+
 .modal-body {
   padding: var(--space-6);
   min-height: 0;
@@ -417,7 +429,7 @@
   color: #f8f6f1;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .modal {
     display: flex;
     flex-direction: column;
@@ -439,7 +451,16 @@
   }
 }
 
-@media (max-width: 680px) {
+@supports (height: 100dvh) {
+  @media (max-width: 768px) {
+    .modal {
+      height: min(92dvh, calc(100dvh - (var(--space-5) * 2)));
+      max-height: 92dvh;
+    }
+  }
+}
+
+@media (max-width: 640px) {
   .btn {
     min-height: 2.75rem;
   }

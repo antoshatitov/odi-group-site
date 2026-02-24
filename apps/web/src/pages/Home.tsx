@@ -153,9 +153,7 @@ const Home = () => {
       } catch (error) {
         if (!mounted) return
         setGalleryItems([])
-        setGalleryLoadError(
-          error instanceof Error ? error.message : 'Не удалось загрузить галерею',
-        )
+        setGalleryLoadError(error instanceof Error ? error.message : 'Не удалось загрузить галерею')
       } finally {
         if (mounted) {
           setIsGalleryLoading(false)
@@ -235,13 +233,11 @@ const Home = () => {
     if (!activeGallery || activeGallery.photos.length === 0) return
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'ArrowRight') {
-        setActiveGalleryIndex(
-          (index) => (index + 1) % activeGallery.photos.length,
-        )
+        setActiveGalleryIndex((index) => (index + 1) % activeGallery.photos.length)
       }
       if (event.key === 'ArrowLeft') {
-        setActiveGalleryIndex((index) =>
-          (index - 1 + activeGallery.photos.length) % activeGallery.photos.length,
+        setActiveGalleryIndex(
+          (index) => (index - 1 + activeGallery.photos.length) % activeGallery.photos.length,
         )
       }
     }
@@ -295,9 +291,7 @@ const Home = () => {
 
   const handleGalleryNext = () => {
     if (!activeGallery || activeGallery.photos.length === 0) return
-    setActiveGalleryIndex(
-      (index) => (index + 1) % activeGallery.photos.length,
-    )
+    setActiveGalleryIndex((index) => (index + 1) % activeGallery.photos.length)
   }
 
   return (
@@ -317,8 +311,8 @@ const Home = () => {
             <div className="stack">
               <span className="eyebrow">О компании</span>
               <h2 className="h2">
-                ОДИ — строительная компания, которая строит индивидуальные жилые дома в
-                Калининграде и области
+                ОДИ — строительная компания, которая строит индивидуальные жилые дома в Калининграде
+                и области
               </h2>
               <p className="lead">
                 За 8 лет мы построили 76 домов и ежегодно строим от 10 проектов — под ключ и без
@@ -406,8 +400,8 @@ const Home = () => {
               <span className="eyebrow">Консультация</span>
               <h2 className="h2">Расскажите о вашем будущем доме</h2>
               <p className="muted">
-                Мы перезвоним, уточним задачу и предложим сценарий строительства под ваш участок
-                и бюджет.
+                Мы перезвоним, уточним задачу и предложим сценарий строительства под ваш участок и
+                бюджет.
               </p>
               <LeadForm source="consultation" />
             </Card>
@@ -516,7 +510,7 @@ const Home = () => {
             </div>
             <div className="stack">
               <strong>Галерея</strong>
-              <div className="project-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+              <div className="project-grid project-grid-compact">
                 {activeProject.gallery.map((image) => (
                   <img
                     key={image.src}
@@ -531,7 +525,7 @@ const Home = () => {
             </div>
             <div className="stack">
               <strong>Планировки</strong>
-              <div className="project-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+              <div className="project-grid project-grid-compact">
                 {activeProject.plans.map((image) => (
                   <img
                     key={image.src}
@@ -572,18 +566,18 @@ const Home = () => {
                         <source
                           type="image/avif"
                           srcSet={buildSrcSet(image.thumb.avif, image.cover.avif)}
-                          sizes="(max-width: 900px) 26vw, 96px"
+                          sizes="(max-width: 768px) 28vw, 96px"
                         />
                       ) : null}
                       <source
                         type="image/webp"
                         srcSet={buildSrcSet(image.thumb.webp, image.cover.webp)}
-                        sizes="(max-width: 900px) 26vw, 96px"
+                        sizes="(max-width: 768px) 28vw, 96px"
                       />
                       <img
                         src={image.thumb.jpg.src}
                         srcSet={buildSrcSet(image.thumb.jpg, image.cover.jpg)}
-                        sizes="(max-width: 900px) 26vw, 96px"
+                        sizes="(max-width: 768px) 28vw, 96px"
                         alt={image.alt}
                         width={image.thumb.jpg.width}
                         height={image.thumb.jpg.height}
@@ -605,19 +599,22 @@ const Home = () => {
                 {buildSrcSet(activeGalleryPhoto.cover.avif, activeGalleryPhoto.full.avif) ? (
                   <source
                     type="image/avif"
-                    srcSet={buildSrcSet(activeGalleryPhoto.cover.avif, activeGalleryPhoto.full.avif)}
-                    sizes="(max-width: 900px) calc(100vw - 3rem), 62vw"
+                    srcSet={buildSrcSet(
+                      activeGalleryPhoto.cover.avif,
+                      activeGalleryPhoto.full.avif,
+                    )}
+                    sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
                   />
                 ) : null}
                 <source
                   type="image/webp"
                   srcSet={buildSrcSet(activeGalleryPhoto.cover.webp, activeGalleryPhoto.full.webp)}
-                  sizes="(max-width: 900px) calc(100vw - 3rem), 62vw"
+                  sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
                 />
                 <img
                   src={activeGalleryPhoto.full.jpg.src}
                   srcSet={buildSrcSet(activeGalleryPhoto.cover.jpg, activeGalleryPhoto.full.jpg)}
-                  sizes="(max-width: 900px) calc(100vw - 3rem), 62vw"
+                  sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
                   alt={activeGalleryPhoto.alt}
                   width={activeGalleryPhoto.full.jpg.width}
                   height={activeGalleryPhoto.full.jpg.height}

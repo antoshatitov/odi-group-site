@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useId } from 'react'
 
 import type { TextareaHTMLAttributes } from 'react'
 
@@ -11,12 +11,9 @@ type TextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 
 const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
   ({ label, name, error, hint, className = '', id, ...props }, ref) => {
-    const inputId = id ?? name
-    const describedBy = error
-      ? `${inputId}-error`
-      : hint
-        ? `${inputId}-hint`
-        : undefined
+    const generatedId = useId().replace(/:/g, '')
+    const inputId = id ?? `${name}-${generatedId}`
+    const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
 
     return (
       <label className="field">
