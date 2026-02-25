@@ -89,6 +89,8 @@ type ProjectFilters = {
   bedrooms: string
 }
 
+const FILTERS_SYNC_DELAY_MS = 300
+
 const parseNumberParam = (value: string | null) =>
   value && /^[0-9]+([.,][0-9]+)?$/.test(value) ? value.replace(',', '.') : ''
 
@@ -111,6 +113,12 @@ const buildSearchParams = (filters: ProjectFilters) => {
   return params
 }
 
+const areFiltersEqual = (left: ProjectFilters, right: ProjectFilters) =>
+  left.area === right.area &&
+  left.floors === right.floors &&
+  left.budget === right.budget &&
+  left.bedrooms === right.bedrooms
+
 const buildSrcSet = (
   small: ResponsiveImageFormat | undefined,
   large: ResponsiveImageFormat | undefined,
@@ -125,7 +133,8 @@ const buildSrcSet = (
 
 const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const filters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams])
+  const urlFilters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams])
+  const [filters, setFilters] = useState<ProjectFilters>(() => urlFilters)
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
   const [isGalleryLoading, setIsGalleryLoading] = useState(true)
   const [galleryLoadError, setGalleryLoadError] = useState<string | null>(null)
@@ -140,6 +149,20 @@ const Home = () => {
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
   }, [])
+
+  useEffect(() => {
+    setFilters((current) => (areFiltersEqual(current, urlFilters) ? current : urlFilters))
+  }, [urlFilters])
+
+  useEffect(() => {
+    if (areFiltersEqual(filters, urlFilters)) return
+
+    const timeoutId = window.setTimeout(() => {
+      setSearchParams(buildSearchParams(filters), { replace: true })
+    }, FILTERS_SYNC_DELAY_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [filters, setSearchParams, urlFilters])
 
   useEffect(() => {
     let mounted = true
@@ -276,8 +299,7 @@ const Home = () => {
   }
 
   const handleFiltersChange = (nextFilters: ProjectFilters) => {
-    const params = buildSearchParams(nextFilters)
-    setSearchParams(params)
+    setFilters(nextFilters)
   }
 
   const activeGalleryPhoto = activeGallery?.photos[activeGalleryIndex]

@@ -40,7 +40,8 @@ npm run dev:server
 - `TELEGRAM_BOT_TOKEN` — токен бота
 - `TELEGRAM_CHAT_ID` — ID чата
 - `PORT` — порт API (по умолчанию 8080)
-- `ALLOWED_ORIGINS` — список разрешённых origin через запятую
+- `ALLOWED_ORIGINS` — список разрешённых origin через запятую (обязательно в production)
+- `TRUST_PROXY` — `true` только если сервер работает за доверенным reverse proxy
 
 **Frontend (`apps/web/.env`, опционально)**
 
@@ -66,6 +67,13 @@ npm --workspace apps/web run perf-check
 npm --workspace apps/web run media-check
 ```
 
+Smoke-проверка UI (Playwright):
+
+```bash
+npm --workspace apps/web run playwright:install
+npm --workspace apps/web run e2e:smoke
+```
+
 Что проверяется:
 
 - размер ключевых build-ассетов (`dist/assets`),
@@ -75,7 +83,8 @@ npm --workspace apps/web run media-check
 Генерация оптимизированных изображений выполняется в `apps/web/src/assets/builded-optimized` на основе
 исходников из `apps/web/src/assets/builded`.
 
-CI (GitHub Actions) падает, если бюджеты из `apps/web/perf-budgets.json` нарушены.
+CI (GitHub Actions) падает, если нарушены бюджеты из `apps/web/perf-budgets.json`
+или не проходит Playwright smoke-тест.
 
 ## Деплой на Timeweb.cloud (VPS)
 

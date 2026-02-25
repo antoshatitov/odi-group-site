@@ -12,6 +12,7 @@ const LOCAL_LIMIT_WINDOW_MS = 2 * 60 * 1000
 const LOCAL_LIMIT_MAX = 2
 const SOFT_DELAY_MS = 300
 const FAST_SUBMIT_MS = 4000
+const REQUEST_TIMEOUT_MS = 12_000
 const phonePattern = /^[0-9+()\s-]{7,20}$/
 
 const readLocalAttempts = () => {
@@ -192,6 +193,9 @@ const CostCalculator = () => {
     recordAttempt(attemptTime)
     setStatus('loading')
 
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
     try {
       await new Promise((resolve) => setTimeout(resolve, SOFT_DELAY_MS))
       const submittedAt = Date.now()
@@ -216,6 +220,7 @@ const CostCalculator = () => {
       const response = await fetch(`${API_BASE}/api/cost-estimate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify(requestPayload),
       })
 
@@ -233,9 +238,15 @@ const CostCalculator = () => {
       }
 
       setStatus('success')
-    } catch {
+    } catch (error) {
       setStatus('error')
-      setError('Не удалось выполнить расчет. Попробуйте позже или позвоните нам.')
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setError('Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.')
+      } else {
+        setError('Не удалось выполнить расчет. Попробуйте позже или позвоните нам.')
+      }
+    } finally {
+      window.clearTimeout(timeoutId)
     }
   }
 

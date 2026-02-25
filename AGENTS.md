@@ -106,7 +106,8 @@ Playwright MCP разрешён для UI checks и исследовательс
 - Preview (frontend): `npm run preview:web`
 - Dev (server): `npm run dev:server` (если присутствует)
 - Start (server): `npm run start:server` (если присутствует)
-- Tests: если не настроены — так и писать, не выдумывать.
+- Install Playwright browser (web): `npm --workspace apps/web run playwright:install`
+- UI smoke tests (web): `npm --workspace apps/web run e2e:smoke`
 
 Правило: **не придумывай команды**. Если не уверен — проверь `package.json` и используй только существующие скрипты.
 
