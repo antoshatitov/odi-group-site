@@ -32,8 +32,8 @@
 
 - Main JS (gzip): `<= 100 KB`
 - Main CSS: `<= 32 KB`
-- Total dist assets: `<= 200000 KB`
-- Largest dist asset: `<= 17000 KB`
+- Total dist assets: `<= 70000 KB`
+- Largest dist asset: `<= 1300 KB`
 
 ### Media budgets (baseline-level)
 

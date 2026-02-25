@@ -2,8 +2,8 @@
   "assetBudgets": {
     "maxMainJsGzipKb": 100,
     "maxMainCssKb": 32,
-    "maxTotalDistAssetsKb": 200000,
-    "maxLargestDistAssetKb": 17000
+    "maxTotalDistAssetsKb": 70000,
+    "maxLargestDistAssetKb": 1300
   },
   "mediaBudgets": {
     "maxOriginalImageMb": 16.5,

@@ -10,7 +10,9 @@ const readEnv = (value) => {
   return value.trim()
 }
 
-const TRUST_PROXY = process.env.TRUST_PROXY !== 'false'
+const TRUST_PROXY = process.env.TRUST_PROXY === 'true'
+const NODE_ENV = readEnv(process.env.NODE_ENV) || 'development'
+const IS_PRODUCTION = NODE_ENV === 'production'
 
 const server = Fastify({
   trustProxy: TRUST_PROXY,
@@ -51,18 +53,43 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map((origin) => origin.trim())
   .filter(Boolean)
 
+if (IS_PRODUCTION && allowedOrigins.length === 0) {
+  server.log.error('ALLOWED_ORIGINS must be configured in production')
+  process.exit(1)
+}
+
+const isLocalDevOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin)
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false
+    return (
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '::1' ||
+      parsed.hostname === '[::1]'
+    )
+  } catch {
+    return false
+  }
+}
+
 await server.register(helmet, {
   contentSecurityPolicy: false,
 })
 
 await server.register(cors, {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.length === 0) {
+    if (!origin) {
       callback(null, true)
       return
     }
 
     if (allowedOrigins.includes(origin)) {
+      callback(null, true)
+      return
+    }
+
+    if (!IS_PRODUCTION && allowedOrigins.length === 0 && isLocalDevOrigin(origin)) {
       callback(null, true)
       return
     }

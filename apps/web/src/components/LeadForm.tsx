@@ -14,6 +14,7 @@ type LeadFormProps = {
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 const phonePattern = /^[0-9+()\s-]{7,20}$/
+const REQUEST_TIMEOUT_MS = 12_000
 
 const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
   const isConsultation = source === 'consultation'
@@ -88,10 +89,14 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
 
     setStatus('loading')
 
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
     try {
       const response = await fetch(`${API_BASE}/api/lead`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           name,
           phone,
@@ -110,9 +115,15 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
 
       setStatus('success')
       reset()
-    } catch {
+    } catch (error) {
       setStatus('error')
-      setError('Не удалось отправить заявку. Попробуйте ещё раз или позвоните.')
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setError('Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.')
+      } else {
+        setError('Не удалось отправить заявку. Попробуйте ещё раз или позвоните.')
+      }
+    } finally {
+      window.clearTimeout(timeoutId)
     }
   }
 

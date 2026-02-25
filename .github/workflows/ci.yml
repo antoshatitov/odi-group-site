@@ -33,3 +33,7 @@ jobs:
         run: npm --workspace apps/web run perf-check
       - name: Check media budgets
         run: npm --workspace apps/web run media-check
+      - name: Install Playwright browser
+        run: npm --workspace apps/web run playwright:install:ci
+      - name: Run Playwright smoke
+        run: npm --workspace apps/web run e2e:smoke

@@ -11,6 +11,8 @@
     "lint:web": "npm --workspace apps/web run lint",
     "format:web": "npm --workspace apps/web run format",
     "preview:web": "npm --workspace apps/web run preview",
+    "playwright:install:web": "npm --workspace apps/web run playwright:install",
+    "test:e2e:web": "npm --workspace apps/web run e2e:smoke",
     "dev:server": "npm --workspace apps/server run dev",
     "start:server": "npm --workspace apps/server run start"
   },

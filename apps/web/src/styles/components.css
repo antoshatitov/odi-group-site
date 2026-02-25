@@ -180,9 +180,9 @@
   resize: vertical;
 }
 
-.input:focus,
-.select:focus,
-.textarea:focus {
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
   outline: none;
   border-color: rgba(31, 95, 83, 0.6);
   box-shadow: var(--focus-ring);
