@@ -68,15 +68,20 @@ const waitForServer = async ({ url, serverProcess, logs, timeoutMs = 30_000 }) =
 const stopServer = async (serverProcess) => {
   if (!serverProcess || serverProcess.exitCode !== null) return
 
+  const waitForExit = once(serverProcess, 'exit')
   serverProcess.kill('SIGTERM')
-  const exited = once(serverProcess, 'exit')
-  const timeout = delay(5_000).then(() => {
-    if (serverProcess.exitCode === null) {
-      serverProcess.kill('SIGKILL')
-    }
-  })
 
-  await Promise.race([exited, timeout])
+  const gracefulExit = await Promise.race([waitForExit.then(() => true), delay(5_000).then(() => false)])
+  if (gracefulExit) return
+
+  if (serverProcess.exitCode === null) {
+    serverProcess.kill('SIGKILL')
+  }
+
+  const forcedExit = await Promise.race([waitForExit.then(() => true), delay(5_000).then(() => false)])
+  if (!forcedExit) {
+    throw new Error('Failed to stop preview server process')
+  }
 }
 
 const runSmokeChecks = async (url) => {
