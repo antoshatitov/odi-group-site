@@ -41,7 +41,7 @@ npm run dev:server
 - `TELEGRAM_CHAT_ID` — ID чата
 - `PORT` — порт API (по умолчанию 8080)
 - `ALLOWED_ORIGINS` — список разрешённых origin через запятую (обязательно в production)
-- `TRUST_PROXY` — `true` только если сервер работает за доверенным reverse proxy
+- `TRUST_PROXY` — `true` для production за Nginx reverse proxy (для локального запуска без proxy — `false`)
 
 **Frontend (`apps/web/.env`, опционально)**
 
@@ -86,25 +86,88 @@ npm --workspace apps/web run e2e:smoke
 CI (GitHub Actions) падает, если нарушены бюджеты из `apps/web/perf-budgets.json`
 или не проходит Playwright smoke-тест.
 
+## Первичная настройка SSH-доступа (новый VPS)
+
+Перед деплоем обязательно выключите парольный SSH-доступ и root login.
+
+1) На Mac создайте отдельный ключ для этого VPS:
+
+```bash
+ssh-keygen -t ed25519 -a 64 -f ~/.ssh/timeweb_odi_prod -C "anton@odi-vps"
+```
+
+2) Добавьте ключ в Keychain и настройте `~/.ssh/config`:
+
+```bash
+ssh-add --apple-use-keychain ~/.ssh/timeweb_odi_prod
+```
+
+```sshconfig
+Host odi-vps
+  HostName <server-ip>
+  User anton
+  IdentityFile ~/.ssh/timeweb_odi_prod
+  AddKeysToAgent yes
+  UseKeychain yes
+```
+
+3) Под root запустите hardening-скрипт на сервере:
+
+```bash
+scp ~/.ssh/timeweb_odi_prod.pub root@<server-ip>:/tmp/anton.pub
+ssh root@<server-ip>
+git clone <repo-url> ~/odi-group
+cd ~/odi-group
+NEW_USER=anton PUBKEY_FILE=/tmp/anton.pub bash deploy/harden-ssh-access.sh
+```
+
+4) Проверки после применения hardening:
+
+```bash
+ssh anton@<server-ip>
+ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no anton@<server-ip>
+ssh root@<server-ip>
+```
+
+Ожидаемо:
+
+- первый вход проходит по ключу;
+- второй и третий вход завершаются `Permission denied (publickey)`.
+
 ## Деплой на Timeweb.cloud (VPS)
+
+### Multi-site layout (рекомендуется)
+
+- `odi`: `/var/www/sites/odi`, backend порт `8080`, service `odi-leads.service`, nginx site `odi`
+- `site-2`: `/var/www/sites/site-2`, backend порт `8081`, service `site-2-leads.service`, nginx site `site-2`
+- `site-3`: `/var/www/sites/site-3`, backend порт `8082`, service `site-3-leads.service`, nginx site `site-3`
+
+Для каждого сайта используйте отдельный `server` block в Nginx и отдельный systemd unit.
+
+### Ручной деплой (пример для `odi`)
 
 1) Подготовьте папки:
 
 ```bash
-sudo mkdir -p /var/www/odi/web /var/www/odi/server
+sudo mkdir -p /var/www/sites/odi/web /var/www/sites/odi/server
 ```
 
 2) Скопируйте файлы:
 
-- `apps/web/dist` → `/var/www/odi/web/dist`
-- `apps/server` → `/var/www/odi/server`
+- `apps/web/dist` → `/var/www/sites/odi/web/dist`
+- `apps/server` → `/var/www/sites/odi/server`
 
 3) Создайте `.env` для сервера:
 
 ```bash
-sudo cp ./.env.example /var/www/odi/server/.env
-sudo nano /var/www/odi/server/.env
+sudo cp ./.env.example /var/www/sites/odi/server/.env
+sudo nano /var/www/sites/odi/server/.env
 ```
+
+Проверьте, что для режима за Nginx установлено:
+
+- `TRUST_PROXY=true`
+- `ALLOWED_ORIGINS=https://odi-group.ru,https://www.odi-group.ru`
 
 4) Настройте systemd:
 
@@ -118,7 +181,7 @@ sudo systemctl enable --now odi-leads.service
 
 ```bash
 sudo cp deploy/nginx.conf /etc/nginx/sites-available/odi
-sudo ln -s /etc/nginx/sites-available/odi /etc/nginx/sites-enabled/odi
+sudo ln -sfn /etc/nginx/sites-available/odi /etc/nginx/sites-enabled/odi
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -145,6 +208,7 @@ sudo certbot --nginx -d odi-group.ru -d www.odi-group.ru
 
 ```bash
 chmod +x deploy/bootstrap-vps.sh
+SITE_SLUG=odi \
 REPO_URL=git@github.com:ORG/REPO.git \
 CERTBOT_EMAIL=admin@odi-group.ru \
 TELEGRAM_BOT_TOKEN=xxx \
@@ -154,13 +218,19 @@ bash deploy/bootstrap-vps.sh
 
 Опциональные переменные:
 
+- `SITE_SLUG` (по умолчанию `odi`)
+- `SERVICE_NAME` (по умолчанию `${SITE_SLUG}-leads.service`)
+- `NGINX_SITE_NAME` (по умолчанию `${SITE_SLUG}`)
 - `DOMAIN` (по умолчанию `odi-group.ru`)
 - `WWW_DOMAIN` (по умолчанию `www.odi-group.ru`)
 - `BRANCH` (по умолчанию `main`)
-- `APP_ROOT` (по умолчанию `/var/www/odi`)
+- `APP_ROOT` (по умолчанию `/var/www/sites/${SITE_SLUG}`)
 - `SRC_DIR` (по умолчанию `$HOME/odi-group`)
-- `ALLOWED_ORIGINS` (по умолчанию `https://odi-group.ru,https://www.odi-group.ru`)
+- `PORT` (по умолчанию `8080`; для следующих сайтов используйте `8081`, `8082`)
+- `ALLOWED_ORIGINS` (по умолчанию на основе `DOMAIN`/`WWW_DOMAIN`)
+- `TRUST_PROXY` (по умолчанию `true`)
 - `ENABLE_UFW` (по умолчанию `true`)
+- `DISABLE_NGINX_DEFAULT` (по умолчанию `false`)
 
 ## App-Only деплой (после merge в main)
 
@@ -174,17 +244,19 @@ bash deploy/deploy-app-only.sh
 
 - подтягивает `origin/main` (или ветку из `BRANCH`)
 - собирает фронтенд (`npm run build:web`)
-- синхронизирует `apps/web/dist` и `apps/server` в `/var/www/odi`
+- синхронизирует `apps/web/dist` и `apps/server` в `${APP_ROOT}`
 - устанавливает production зависимости backend
-- перезапускает `odi-leads.service`
+- перезапускает `${SERVICE_NAME}`
 - выполняет health-check API и HTTP(S) проверки доменов
 
 Опциональные переменные:
 
+- `SITE_SLUG` (по умолчанию `odi`)
+- `SERVICE_NAME` (по умолчанию `${SITE_SLUG}-leads.service`)
+- `NGINX_SITE_NAME` (по умолчанию `${SITE_SLUG}`)
 - `BRANCH` (по умолчанию `main`)
 - `SRC_DIR` (по умолчанию `$HOME/odi-group`)
-- `APP_ROOT` (по умолчанию `/var/www/odi`)
-- `SERVICE_NAME` (по умолчанию `odi-leads.service`)
+- `APP_ROOT` (по умолчанию `/var/www/sites/${SITE_SLUG}`)
 - `PORT` (по умолчанию `8080`)
 - `DOMAIN` (по умолчанию `odi-group.ru`)
 - `WWW_DOMAIN` (по умолчанию `www.odi-group.ru`)
@@ -194,9 +266,12 @@ bash deploy/deploy-app-only.sh
 Пример:
 
 ```bash
+SITE_SLUG=odi \
 BRANCH=main \
-SRC_DIR=/root/odi-group \
-APP_ROOT=/var/www/odi \
+SRC_DIR=/home/anton/odi-group \
+APP_ROOT=/var/www/sites/odi \
+SERVICE_NAME=odi-leads.service \
+NGINX_SITE_NAME=odi \
 bash deploy/deploy-app-only.sh
 ```
 

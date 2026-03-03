@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_ROOT="${APP_ROOT:-/var/www/odi}"
+SITE_SLUG="${SITE_SLUG:-odi}"
+SERVICE_NAME="${SERVICE_NAME:-${SITE_SLUG}-leads.service}"
+NGINX_SITE_NAME="${NGINX_SITE_NAME:-${SITE_SLUG}}"
+APP_ROOT="${APP_ROOT:-/var/www/sites/${SITE_SLUG}}"
 SRC_DIR="${SRC_DIR:-$HOME/odi-group}"
 BRANCH="${BRANCH:-main}"
 PORT="${PORT:-8080}"
-SERVICE_NAME="${SERVICE_NAME:-odi-leads.service}"
 DOMAIN="${DOMAIN:-odi-group.ru}"
 WWW_DOMAIN="${WWW_DOMAIN:-www.odi-group.ru}"
 INSTALL_WORKSPACE_DEPS="${INSTALL_WORKSPACE_DEPS:-true}"
@@ -54,6 +56,7 @@ main() {
 
   info "Checking sudo access"
   sudo -v
+  info "Deploy target: site=${NGINX_SITE_NAME}, service=${SERVICE_NAME}, app_root=${APP_ROOT}"
 
   if [[ ! -d "${SRC_DIR}/.git" ]]; then
     echo "Source repository not found at ${SRC_DIR}. Clone bootstrap repository first." >&2
@@ -115,6 +118,11 @@ main() {
 
   info "Post-deploy checks"
   sudo systemctl is-active "${SERVICE_NAME}"
+  if sudo test -e "/etc/nginx/sites-enabled/${NGINX_SITE_NAME}"; then
+    info "Nginx site is enabled: ${NGINX_SITE_NAME}"
+  else
+    info "Nginx site ${NGINX_SITE_NAME} is not enabled; skipping site presence check."
+  fi
   local healthcheck_url="http://127.0.0.1:${PORT}/api/health"
   if ! wait_for_healthcheck "${healthcheck_url}" "${HEALTHCHECK_RETRIES}" "${HEALTHCHECK_DELAY}"; then
     echo "Healthcheck failed after ${HEALTHCHECK_RETRIES} attempts: ${healthcheck_url}" >&2
