@@ -1,14 +1,24 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+SITE_SLUG="${SITE_SLUG:-odi}"
+SERVICE_NAME="${SERVICE_NAME:-${SITE_SLUG}-leads.service}"
+NGINX_SITE_NAME="${NGINX_SITE_NAME:-${SITE_SLUG}}"
 DOMAIN="${DOMAIN:-odi-group.ru}"
 WWW_DOMAIN="${WWW_DOMAIN:-www.odi-group.ru}"
-APP_ROOT="${APP_ROOT:-/var/www/odi}"
+APP_ROOT="${APP_ROOT:-/var/www/sites/${SITE_SLUG}}"
 SRC_DIR="${SRC_DIR:-$HOME/odi-group}"
 BRANCH="${BRANCH:-main}"
 PORT="${PORT:-8080}"
-ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://${DOMAIN},https://${WWW_DOMAIN}}"
 ENABLE_UFW="${ENABLE_UFW:-true}"
+DISABLE_NGINX_DEFAULT="${DISABLE_NGINX_DEFAULT:-false}"
+TRUST_PROXY="${TRUST_PROXY:-true}"
+
+default_allowed_origins="https://${DOMAIN}"
+if [[ -n "${WWW_DOMAIN}" ]]; then
+  default_allowed_origins="${default_allowed_origins},https://${WWW_DOMAIN}"
+fi
+ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-${default_allowed_origins}}"
 
 REPO_URL="${REPO_URL:?Set REPO_URL to the Git repository URL}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:?Set CERTBOT_EMAIL for Lets Encrypt}"
@@ -28,6 +38,16 @@ info() {
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Missing required command: $1" >&2
+    exit 1
+  fi
+}
+
+require_bool() {
+  local value="$1"
+  local name="$2"
+
+  if [[ "${value}" != "true" && "${value}" != "false" ]]; then
+    echo "${name} must be true or false (got: ${value})" >&2
     exit 1
   fi
 }
@@ -59,6 +79,7 @@ LOG_HASH_SALT=${LOG_HASH_SALT}
 CAPTCHA_ENABLED=${CAPTCHA_ENABLED}
 PORT=${PORT}
 ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+TRUST_PROXY=${TRUST_PROXY}
 EOF
 
   sudo install -o root -g www-data -m 640 "$tmp_env" "${APP_ROOT}/server/.env"
@@ -66,9 +87,9 @@ EOF
 }
 
 write_systemd_service() {
-  sudo tee /etc/systemd/system/odi-leads.service >/dev/null <<EOF
+  sudo tee "/etc/systemd/system/${SERVICE_NAME}" >/dev/null <<EOF
 [Unit]
-Description=ODI Lead API
+Description=${SITE_SLUG} Lead API
 After=network.target
 
 [Service]
@@ -86,7 +107,7 @@ EOF
 }
 
 write_nginx_config() {
-  sudo tee /etc/nginx/sites-available/odi >/dev/null <<EOF
+  sudo tee "/etc/nginx/sites-available/${NGINX_SITE_NAME}" >/dev/null <<EOF
 server {
   listen 80;
   server_name ${DOMAIN} ${WWW_DOMAIN};
@@ -114,9 +135,16 @@ main() {
   require_cmd sudo
   require_cmd curl
   require_cmd git
+  require_cmd npm
+  require_cmd rsync
+
+  require_bool "${ENABLE_UFW}" "ENABLE_UFW"
+  require_bool "${DISABLE_NGINX_DEFAULT}" "DISABLE_NGINX_DEFAULT"
+  require_bool "${TRUST_PROXY}" "TRUST_PROXY"
 
   info "Checking sudo access"
   sudo -v
+  info "Deploy target: site=${NGINX_SITE_NAME}, service=${SERVICE_NAME}, app_root=${APP_ROOT}"
 
   info "Updating apt repositories and base packages"
   sudo apt update
@@ -176,12 +204,15 @@ main() {
   write_systemd_service
   write_nginx_config
 
-  sudo rm -f /etc/nginx/sites-enabled/default
-  sudo ln -sfn /etc/nginx/sites-available/odi /etc/nginx/sites-enabled/odi
+  if [[ "${DISABLE_NGINX_DEFAULT}" == "true" ]]; then
+    sudo rm -f /etc/nginx/sites-enabled/default
+  fi
+  sudo ln -sfn "/etc/nginx/sites-available/${NGINX_SITE_NAME}" \
+    "/etc/nginx/sites-enabled/${NGINX_SITE_NAME}"
 
   info "Reloading systemd and restarting services"
   sudo systemctl daemon-reload
-  sudo systemctl enable --now odi-leads.service
+  sudo systemctl enable --now "${SERVICE_NAME}"
   sudo nginx -t
   sudo systemctl reload nginx
 
@@ -198,9 +229,12 @@ main() {
   sudo certbot renew --dry-run
 
   info "Post-deploy checks"
-  sudo systemctl --no-pager --full status odi-leads.service | sed -n '1,20p'
+  sudo systemctl --no-pager --full status "${SERVICE_NAME}" | sed -n '1,20p'
   curl -fsS "http://127.0.0.1:${PORT}/api/health"
   curl -I "https://${DOMAIN}"
+  if [[ -n "${WWW_DOMAIN}" ]]; then
+    curl -I "https://${WWW_DOMAIN}"
+  fi
 
   info "Deployment complete"
 }
