@@ -4,6 +4,7 @@ import Badge from '../components/Badge'
 import Card from '../components/Card'
 import Container from '../components/Container'
 import Section from '../components/Section'
+import { trackGoal } from '../utils/analytics'
 
 type ContactsSectionProps = {
   mapContainerRef: RefObject<HTMLDivElement>
@@ -21,7 +22,17 @@ const ContactsSection = ({ mapContainerRef }: ContactsSectionProps) => {
               <div>
                 <strong>Телефон</strong>
                 <div>
-                  <a href="tel:+79244422800">+7 924 442-28-00</a>
+                  <a
+                    href="tel:+79244422800"
+                    onClick={() =>
+                      trackGoal('contacts_phone_click', {
+                        cta_location: 'contacts',
+                        source_context: 'contacts_phone',
+                      })
+                    }
+                  >
+                    +7 924 442-28-00
+                  </a>
                 </div>
               </div>
               <div>
@@ -33,11 +44,19 @@ const ContactsSection = ({ mapContainerRef }: ContactsSectionProps) => {
               <div>
                 <strong>Мессенджеры</strong>
                 <div className="hero-actions">
-                  <a className="btn btn-outline btn-sm" href="https://t.me/o781781">
+                  <a
+                    className="btn btn-outline btn-sm"
+                    href="https://t.me/o781781"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() =>
+                      trackGoal('contacts_telegram_click', {
+                        cta_location: 'contacts',
+                        source_context: 'contacts_telegram',
+                      })
+                    }
+                  >
                     Telegram
-                  </a>
-                  <a className="btn btn-outline btn-sm" href="https://wa.me/79244422800">
-                    WhatsApp
                   </a>
                 </div>
               </div>

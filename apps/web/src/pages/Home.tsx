@@ -15,6 +15,7 @@ import HeroSection from '../sections/HeroSection'
 import ProjectsSection from '../sections/ProjectsSection'
 import ServicesSection from '../sections/ServicesSection'
 import type { GalleryItem, Project, ResponsiveImageFormat } from '../types'
+import { trackGoal } from '../utils/analytics'
 import { formatArea, formatPrice } from '../utils/format'
 
 const services = [
@@ -282,6 +283,14 @@ const Home = () => {
       preloadImage.src = activeGallery.photos[index].full.webp.src
     }
   }, [activeGallery, activeGalleryIndex])
+
+  useEffect(() => {
+    if (!isCalculatorOpen) return
+    trackGoal('calculator_open', {
+      cta_location: 'hero',
+      source_context: 'calculator_modal',
+    })
+  }, [isCalculatorOpen])
 
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {

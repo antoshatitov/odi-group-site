@@ -107,6 +107,24 @@ await server.register(rateLimit, {
   keyGenerator: (req) => req.ip,
 })
 
+const attributionSchemaProperties = {
+  source_context: { type: 'string', maxLength: 120 },
+  utm_source: { type: 'string', maxLength: 120 },
+  utm_medium: { type: 'string', maxLength: 120 },
+  utm_campaign: { type: 'string', maxLength: 160 },
+  utm_content: { type: 'string', maxLength: 160 },
+  utm_term: { type: 'string', maxLength: 160 },
+  referrer_domain: { type: 'string', maxLength: 255 },
+  landing_page: { type: 'string', maxLength: 255 },
+  first_utm_source: { type: 'string', maxLength: 120 },
+  first_utm_medium: { type: 'string', maxLength: 120 },
+  first_utm_campaign: { type: 'string', maxLength: 160 },
+  first_utm_content: { type: 'string', maxLength: 160 },
+  first_utm_term: { type: 'string', maxLength: 160 },
+  first_referrer_domain: { type: 'string', maxLength: 255 },
+  first_landing_page: { type: 'string', maxLength: 255 },
+}
+
 const leadSchema = {
   body: {
     type: 'object',
@@ -126,6 +144,7 @@ const leadSchema = {
       source: { type: 'string', maxLength: 80 },
       consent: { type: 'boolean' },
       website: { type: 'string', maxLength: 120 },
+      ...attributionSchemaProperties,
     },
   },
 }
@@ -133,6 +152,65 @@ const leadSchema = {
 const normalizeText = (value, max) => {
   if (!value) return ''
   return String(value).replace(/\s+/g, ' ').trim().slice(0, max)
+}
+
+const buildAttributionLines = (attribution = {}) => {
+  const lines = []
+  const sourceContext = normalizeText(attribution.source_context, 120)
+  const utmSource = normalizeText(attribution.utm_source, 120)
+  const utmMedium = normalizeText(attribution.utm_medium, 120)
+  const utmCampaign = normalizeText(attribution.utm_campaign, 160)
+  const utmContent = normalizeText(attribution.utm_content, 160)
+  const utmTerm = normalizeText(attribution.utm_term, 160)
+  const referrerDomain = normalizeText(attribution.referrer_domain, 255)
+  const landingPage = normalizeText(attribution.landing_page, 255)
+  const firstUtmSource = normalizeText(attribution.first_utm_source, 120)
+  const firstUtmMedium = normalizeText(attribution.first_utm_medium, 120)
+  const firstUtmCampaign = normalizeText(attribution.first_utm_campaign, 160)
+  const firstUtmContent = normalizeText(attribution.first_utm_content, 160)
+  const firstUtmTerm = normalizeText(attribution.first_utm_term, 160)
+  const firstReferrerDomain = normalizeText(attribution.first_referrer_domain, 255)
+  const firstLandingPage = normalizeText(attribution.first_landing_page, 255)
+
+  if (sourceContext) {
+    lines.push(`Контекст: ${sourceContext}`)
+  }
+
+  if (utmSource || utmMedium || utmCampaign || utmContent || utmTerm) {
+    lines.push(
+      `UTM: source=${utmSource || '-'}, medium=${utmMedium || '-'}, campaign=${
+        utmCampaign || '-'
+      }, content=${utmContent || '-'}, term=${utmTerm || '-'}`,
+    )
+  }
+
+  if (referrerDomain) {
+    lines.push(`Реферер: ${referrerDomain}`)
+  }
+
+  if (landingPage) {
+    lines.push(`Landing: ${landingPage}`)
+  }
+
+  if (
+    firstUtmSource ||
+    firstUtmMedium ||
+    firstUtmCampaign ||
+    firstUtmContent ||
+    firstUtmTerm ||
+    firstReferrerDomain ||
+    firstLandingPage
+  ) {
+    lines.push(
+      `First touch: source=${firstUtmSource || '-'}, medium=${firstUtmMedium || '-'}, campaign=${
+        firstUtmCampaign || '-'
+      }, content=${firstUtmContent || '-'}, term=${firstUtmTerm || '-'}, ref=${
+        firstReferrerDomain || '-'
+      }, landing=${firstLandingPage || '-'}`,
+    )
+  }
+
+  return lines
 }
 
 const buildTelegramMessage = ({
@@ -143,6 +221,7 @@ const buildTelegramMessage = ({
   projectName,
   projectId,
   source,
+  attribution,
 }) => {
   const normalizedMessage = normalizeText(message, 500)
   const lines = [
@@ -167,6 +246,8 @@ const buildTelegramMessage = ({
   if (source) {
     lines.push(`Источник: ${normalizeText(source, 80)}`)
   }
+
+  lines.push(...buildAttributionLines(attribution))
 
   lines.push(`Время: ${new Date().toLocaleString('ru-RU')}`)
 
@@ -383,8 +464,9 @@ const buildCalcMessage = ({
   name,
   phone,
   estimate,
+  attribution,
 }) => {
-  return [
+  const lines = [
     'Заявка: Расчет стоимости',
     `Время: ${timestamp}`,
     `Этажность: ${floors}`,
@@ -393,7 +475,11 @@ const buildCalcMessage = ({
     `Имя: ${normalizeText(name, 80)}`,
     `Телефон: ${normalizeText(phone, 20)}`,
     `Ориентировочная стоимость: ${estimate}`,
-  ].join('\n')
+  ]
+
+  lines.push(...buildAttributionLines(attribution))
+
+  return lines.join('\n')
 }
 
 const createSlidingWindowLimiter = (limits, options = {}) => {
@@ -556,6 +642,7 @@ const costSchema = {
       clientSuspected: { type: 'boolean' },
       clientSuspectedReason: { type: 'string', maxLength: 40 },
       captchaToken: { type: 'string', maxLength: 200 },
+      ...attributionSchemaProperties,
     },
   },
 }
@@ -603,6 +690,21 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
     clientSuspected,
     clientSuspectedReason,
     captchaToken,
+    source_context,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
+    utm_term,
+    referrer_domain,
+    landing_page,
+    first_utm_source,
+    first_utm_medium,
+    first_utm_campaign,
+    first_utm_content,
+    first_utm_term,
+    first_referrer_domain,
+    first_landing_page,
   } = request.body
 
   calcMetrics.total += 1
@@ -758,6 +860,23 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
     name,
     phone: normalizedPhone,
     estimate: formattedEstimate,
+    attribution: {
+      source_context,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      utm_term,
+      referrer_domain,
+      landing_page,
+      first_utm_source,
+      first_utm_medium,
+      first_utm_campaign,
+      first_utm_content,
+      first_utm_term,
+      first_referrer_domain,
+      first_landing_page,
+    },
   })
 
   if (quarantineReasons.length > 0) {
@@ -817,8 +936,31 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
 })
 
 server.post('/api/lead', { schema: leadSchema }, async (request, reply) => {
-  const { name, phone, message, projectId, projectName, source, consent, website } =
-    request.body
+  const {
+    name,
+    phone,
+    message,
+    projectId,
+    projectName,
+    source,
+    consent,
+    website,
+    source_context,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
+    utm_term,
+    referrer_domain,
+    landing_page,
+    first_utm_source,
+    first_utm_medium,
+    first_utm_campaign,
+    first_utm_content,
+    first_utm_term,
+    first_referrer_domain,
+    first_landing_page,
+  } = request.body
   const isConsultation = source === 'consultation'
   const normalizedMessage = normalizeText(message, 500)
 
@@ -845,6 +987,23 @@ server.post('/api/lead', { schema: leadSchema }, async (request, reply) => {
     projectName,
     source,
     title: isConsultation ? 'Запрос консультации' : undefined,
+    attribution: {
+      source_context,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      utm_term,
+      referrer_domain,
+      landing_page,
+      first_utm_source,
+      first_utm_medium,
+      first_utm_campaign,
+      first_utm_content,
+      first_utm_term,
+      first_referrer_domain,
+      first_landing_page,
+    },
   }
 
   const telegramMessage = buildTelegramMessage(payload)
