@@ -46,6 +46,11 @@ npm run dev:server
 **Frontend (`apps/web/.env`, опционально)**
 
 - `VITE_API_BASE` — базовый URL API, например `http://localhost:8080`
+- `VITE_YM_COUNTER_ID` — ID счётчика Яндекс.Метрики для событий/целей
+
+### Аналитика
+
+- Базовый weekly-шаблон отчёта: `analytics-weekly-report.md`
 
 ## Сборка фронтенда
 

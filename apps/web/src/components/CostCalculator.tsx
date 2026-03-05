@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 
 import Button from './Button'
 import Input from './Input'
+import { getAttribution, trackGoal } from '../utils/analytics'
 import { formatRubles } from '../utils/format'
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
@@ -14,6 +15,7 @@ const SOFT_DELAY_MS = 300
 const FAST_SUBMIT_MS = 4000
 const REQUEST_TIMEOUT_MS = 12_000
 const phonePattern = /^[0-9+()\s-]{7,20}$/
+const CALCULATOR_LOCATION = 'calculator_modal'
 
 const readLocalAttempts = () => {
   if (typeof window === 'undefined') return []
@@ -177,6 +179,12 @@ const CostCalculator = () => {
 
     const nextErrors = validate()
     if (Object.keys(nextErrors).length > 0) {
+      trackGoal('calculator_error', {
+        cta_location: CALCULATOR_LOCATION,
+        source_context: CALCULATOR_LOCATION,
+        error_type: 'validation',
+        error_fields: Object.keys(nextErrors).join(','),
+      })
       focusFirstError(nextErrors)
       return
     }
@@ -185,12 +193,23 @@ const CostCalculator = () => {
     const attemptTime = Date.now()
     const recentAttempts = getRecentAttempts(attemptTime)
     if (recentAttempts.length >= LOCAL_LIMIT_MAX) {
+      trackGoal('calculator_error', {
+        cta_location: CALCULATOR_LOCATION,
+        source_context: CALCULATOR_LOCATION,
+        error_type: 'local_rate_limit',
+      })
       setError('Слишком частые запросы. Попробуйте снова через пару минут.')
       setStatus('error')
       return
     }
 
     recordAttempt(attemptTime)
+    trackGoal('calculator_submit', {
+      cta_location: CALCULATOR_LOCATION,
+      source_context: CALCULATOR_LOCATION,
+      package_type: packageType,
+      floors: floors || 'unknown',
+    })
     setStatus('loading')
 
     const controller = new AbortController()
@@ -209,6 +228,8 @@ const CostCalculator = () => {
         phone,
         consent,
         website: honeypot,
+        source_context: CALCULATOR_LOCATION,
+        ...getAttribution(),
         openedAt,
         submittedAt,
         action: 'cost_estimate',
@@ -238,11 +259,26 @@ const CostCalculator = () => {
       }
 
       setStatus('success')
+      trackGoal('calculator_success', {
+        cta_location: CALCULATOR_LOCATION,
+        source_context: CALCULATOR_LOCATION,
+        package_type: packageType,
+      })
     } catch (error) {
       setStatus('error')
       if (error instanceof DOMException && error.name === 'AbortError') {
+        trackGoal('calculator_error', {
+          cta_location: CALCULATOR_LOCATION,
+          source_context: CALCULATOR_LOCATION,
+          error_type: 'timeout',
+        })
         setError('Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.')
       } else {
+        trackGoal('calculator_error', {
+          cta_location: CALCULATOR_LOCATION,
+          source_context: CALCULATOR_LOCATION,
+          error_type: 'request',
+        })
         setError('Не удалось выполнить расчет. Попробуйте позже или позвоните нам.')
       }
     } finally {

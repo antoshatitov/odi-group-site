@@ -4,6 +4,7 @@ import Button from '../components/Button'
 import Container from '../components/Container'
 import Section from '../components/Section'
 import { SHOW_PROJECTS } from '../config/featureFlags'
+import { trackGoal } from '../utils/analytics'
 
 type HeroSectionProps = {
   onOpenCalculator: () => void
@@ -29,6 +30,28 @@ const shouldAutoplayHero = () => !supportsReducedMotion() && !supportsSaveData()
 
 const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
   const [allowAutoplay, setAllowAutoplay] = useState(shouldAutoplayHero)
+
+  const handleTelegramClick = () => {
+    trackGoal('hero_cta_telegram_click', {
+      cta_location: 'hero',
+      source_context: 'hero_telegram',
+    })
+  }
+
+  const handleCallClick = () => {
+    trackGoal('hero_cta_call_click', {
+      cta_location: 'hero',
+      source_context: 'hero_phone',
+    })
+  }
+
+  const handleCalculatorClick = () => {
+    trackGoal('hero_cta_calculator_click', {
+      cta_location: 'hero',
+      source_context: 'hero_calculator',
+    })
+    onOpenCalculator()
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -66,7 +89,23 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
               качества и сопровождение на каждом этапе.
             </p>
             <div className="hero-actions reveal" data-delay="3">
-              <Button size="lg" type="button" onClick={onOpenCalculator}>
+              <a
+                className="btn btn-primary btn-lg"
+                href="https://t.me/o781781"
+                target="_blank"
+                rel="noreferrer"
+                onClick={handleTelegramClick}
+              >
+                Написать в Telegram
+              </a>
+              <a
+                className="btn btn-outline btn-lg"
+                href="tel:+79244422800"
+                onClick={handleCallClick}
+              >
+                Позвонить за 2 минуты
+              </a>
+              <Button size="lg" variant="outline" type="button" onClick={handleCalculatorClick}>
                 Расчет стоимости
               </Button>
               {SHOW_PROJECTS && (
