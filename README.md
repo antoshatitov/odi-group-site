@@ -51,6 +51,8 @@ npm run dev:server
 ### Аналитика
 
 - Базовый weekly-шаблон отчёта: `analytics-weekly-report.md`
+- Чек-лист rollout: `docs/analytics-rollout-checklist.md`
+- Пошаговый runbook rollout: `docs/analytics-rollout-runbook.md`
 
 ## Сборка фронтенда
 
@@ -77,6 +79,14 @@ Smoke-проверка UI (Playwright):
 ```bash
 npm --workspace apps/web run playwright:install
 npm --workspace apps/web run e2e:smoke
+```
+
+Проверка аналитики (Playwright + mock API, без реальной отправки заявок):
+
+```bash
+npm --workspace apps/web run e2e:analytics
+# или из корня
+npm run test:e2e:analytics:web
 ```
 
 Что проверяется:

@@ -108,6 +108,8 @@ Playwright MCP разрешён для UI checks и исследовательс
 - Start (server): `npm run start:server` (если присутствует)
 - Install Playwright browser (web): `npm --workspace apps/web run playwright:install`
 - UI smoke tests (web): `npm --workspace apps/web run e2e:smoke`
+- Analytics e2e tests (web): `npm --workspace apps/web run e2e:analytics`
+- Analytics e2e tests (root): `npm run test:e2e:analytics:web`
 
 Правило: **не придумывай команды**. Если не уверен — проверь `package.json` и используй только существующие скрипты.
 
