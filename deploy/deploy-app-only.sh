@@ -92,7 +92,7 @@ main() {
   # Keep server-side secrets that are not stored in git.
   sudo rsync -a --delete --exclude node_modules --exclude .env "${SRC_DIR}/apps/server/" "${APP_ROOT}/server/"
 
-  if [[ ! -f "${APP_ROOT}/server/.env" ]]; then
+  if ! sudo test -f "${APP_ROOT}/server/.env"; then
     echo "Missing ${APP_ROOT}/server/.env. Restore environment file before restarting service." >&2
     exit 1
   fi
