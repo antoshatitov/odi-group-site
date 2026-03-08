@@ -103,7 +103,7 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
                 href="tel:+79244422800"
                 onClick={handleCallClick}
               >
-                Позвонить за 2 минуты
+                Позвонить
               </a>
               <Button size="lg" variant="outline" type="button" onClick={handleCalculatorClick}>
                 Расчет стоимости
