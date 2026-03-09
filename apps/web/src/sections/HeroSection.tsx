@@ -88,6 +88,10 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
               Проектирование, строительство и инженерия под ключ. Прозрачные сроки, контроль
               качества и сопровождение на каждом этапе.
             </p>
+            <p className="lead reveal" data-delay="3">
+              Строительная компания «ОДИ» является аккредитованным подрядчиком в ключевых
+              банках — ВТБ, Сбербанк, Дом.рф
+            </p>
             <div className="hero-actions reveal" data-delay="3">
               <a
                 className="btn btn-primary btn-lg"
