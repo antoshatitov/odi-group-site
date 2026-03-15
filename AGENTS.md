@@ -59,19 +59,27 @@ API:
 
 ## 3) Skills (инструкции для агента)
 
-На текущий момент локальные skills в репозитории удалены.
-Если позже skills снова появятся в `skills/`, следуй инструкциям из соответствующих `SKILL.md`.
+В репозитории должны оставаться только следующие локальные skills:
+- `frontend-responsive-ui`
+- `web-design-guidelines`
+- `vercel-react-best-practices`
+- `agent-browser`
+- `frontend-design`
 
 Правило:
-- Если задача относится к области, покрытой локальным skill — открой и следуй инструкциям из `skills/<skill-name>/SKILL.md`.
+- Если задача относится к области, покрытой локальным skill — открой и следуй инструкциям из `.agents/skills/<skill-name>/SKILL.md`.
 - Если нужного skill нет в репозитории — работай по правилам этого `AGENTS.md`.
 
 Карта применения (ориентир):
-- Локальная карта skills сейчас пустая (skills удалены).
+- `frontend-responsive-ui` — адаптивные интерфейсы, mobile-first layout, responsive-поведение.
+- `web-design-guidelines` — review UI/UX и accessibility по web interface guidelines.
+- `vercel-react-best-practices` — review и реализация React-паттернов с упором на performance.
+- `agent-browser` — browser automation, UI checks, скриншоты, интерактивная проверка страниц.
+- `frontend-design` — дизайн и реализация визуально сильных production-grade интерфейсов.
 
 Обновление:
 - Не обновляй этот раздел только из-за “обнаружения” нового skill.
-- Если в PR добавляются/удаляются skills (меняется папка `skills/`) — обнови карту применения в этом разделе в рамках того же PR.
+- Если в PR добавляются/удаляются skills (меняется папка `.agents/skills/`) — обнови карту применения в этом разделе в рамках того же PR.
 
 ---
 
