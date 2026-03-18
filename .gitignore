@@ -16,13 +16,21 @@ lerna-debug.log*
 
 # Environment
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # IDE / OS
 .vscode/
 .idea/
 .DS_Store
+docs/**/*.DS_Store
+
+# Secrets / certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pub
 
 # Tooling
 .opencode/
@@ -30,4 +38,7 @@ skills-lock.json
 
 # Docs
 docs/*
-!docs/analytics-rollout-runbook.md
+!docs/
+!docs/*.md
+docs/plan.md
+docs/work/

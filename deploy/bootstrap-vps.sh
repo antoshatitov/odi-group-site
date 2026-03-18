@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-SITE_SLUG="${SITE_SLUG:-odi}"
+SITE_SLUG="${SITE_SLUG:-site}"
 SERVICE_NAME="${SERVICE_NAME:-${SITE_SLUG}-leads.service}"
 NGINX_SITE_NAME="${NGINX_SITE_NAME:-${SITE_SLUG}}"
-DOMAIN="${DOMAIN:-odi-group.ru}"
-WWW_DOMAIN="${WWW_DOMAIN:-www.odi-group.ru}"
+DOMAIN="${DOMAIN:-example.com}"
+WWW_DOMAIN="${WWW_DOMAIN:-www.example.com}"
 APP_ROOT="${APP_ROOT:-/var/www/sites/${SITE_SLUG}}"
-SRC_DIR="${SRC_DIR:-$HOME/odi-group}"
+SRC_DIR="${SRC_DIR:-$HOME/app-repo}"
 BRANCH="${BRANCH:-main}"
 PORT="${PORT:-8080}"
 ENABLE_UFW="${ENABLE_UFW:-true}"

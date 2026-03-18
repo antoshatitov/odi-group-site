@@ -15,6 +15,7 @@ const localBaseUrl = `http://127.0.0.1:${localPort}`
 const baseUrl = process.env.E2E_BASE_URL || localBaseUrl
 const headless = process.env.PW_HEADLESS !== 'false'
 
+const buildArgs = ['run', 'build']
 const previewArgs = ['run', 'preview', '--', '--host', '127.0.0.1', '--port', String(localPort)]
 const requiredGoals = [
   'hero_cta_telegram_click',
@@ -114,6 +115,26 @@ const stopServer = async (serverProcess) => {
   const forcedExit = await Promise.race([waitForExit.then(() => true), delay(5_000).then(() => false)])
   if (!forcedExit) {
     throw new Error('Failed to stop preview server process')
+  }
+}
+
+const runBuild = async () => {
+  const logs = createOutputCollector()
+  const buildProcess = spawn('npm', buildArgs, {
+    cwd: webRoot,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      VITE_YM_COUNTER_ID: process.env.VITE_YM_COUNTER_ID || '1',
+    },
+  })
+
+  buildProcess.stdout?.on('data', logs.append)
+  buildProcess.stderr?.on('data', logs.append)
+
+  const [exitCode] = await once(buildProcess, 'exit')
+  if (exitCode !== 0) {
+    throw new Error(`Build failed with code ${exitCode}.\nRecent logs:\n${logs.read()}`)
   }
 }
 
@@ -317,10 +338,14 @@ const main = async () => {
 
   try {
     if (!process.env.E2E_BASE_URL) {
+      await runBuild()
       serverProcess = spawn('npm', previewArgs, {
         cwd: webRoot,
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: process.env,
+        env: {
+          ...process.env,
+          VITE_YM_COUNTER_ID: process.env.VITE_YM_COUNTER_ID || '1',
+        },
       })
 
       serverProcess.stdout?.on('data', logs.append)

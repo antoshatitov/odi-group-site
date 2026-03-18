@@ -2,15 +2,9 @@ import Button from '../components/Button'
 import Card from '../components/Card'
 import Container from '../components/Container'
 import Section from '../components/Section'
+import type { ProjectFilters } from '../hooks/useProjectFilters'
 import type { Project } from '../types'
 import { formatArea, formatPrice } from '../utils/format'
-
-type ProjectFilters = {
-  area: string
-  floors: string
-  budget: string
-  bedrooms: string
-}
 
 type ProjectsSectionProps = {
   filters: ProjectFilters

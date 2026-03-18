@@ -4,17 +4,21 @@ import type { FormEvent } from 'react'
 
 import Button from './Button'
 import Input from './Input'
-import { getAttribution, trackGoal } from '../utils/analytics'
+import {
+  FormSubmissionError,
+  PHONE_INPUT_PATTERN,
+  getSubmissionErrorMessage,
+  isValidPhoneNumber,
+  submitFormJson,
+} from '../lib/formSubmission'
+import { trackGoal } from '../utils/analytics'
 import { formatRubles } from '../utils/format'
 
-const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 const LOCAL_ATTEMPTS_KEY = 'odi_calc_attempts'
 const LOCAL_LIMIT_WINDOW_MS = 2 * 60 * 1000
 const LOCAL_LIMIT_MAX = 2
 const SOFT_DELAY_MS = 300
 const FAST_SUBMIT_MS = 4000
-const REQUEST_TIMEOUT_MS = 12_000
-const phonePattern = /^[0-9+()\s-]{7,20}$/
 const CALCULATOR_LOCATION = 'calculator_modal'
 
 const readLocalAttempts = () => {
@@ -160,7 +164,7 @@ const CostCalculator = () => {
       nextErrors.name = 'Введите имя и фамилию.'
     }
 
-    if (!phonePattern.test(phone.trim())) {
+    if (!isValidPhoneNumber(phone)) {
       nextErrors.phone = 'Введите корректный номер телефона.'
     }
 
@@ -212,9 +216,6 @@ const CostCalculator = () => {
     })
     setStatus('loading')
 
-    const controller = new AbortController()
-    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
-
     try {
       await new Promise((resolve) => setTimeout(resolve, SOFT_DELAY_MS))
       const submittedAt = Date.now()
@@ -229,7 +230,6 @@ const CostCalculator = () => {
         consent,
         website: honeypot,
         source_context: CALCULATOR_LOCATION,
-        ...getAttribution(),
         openedAt,
         submittedAt,
         action: 'cost_estimate',
@@ -238,21 +238,18 @@ const CostCalculator = () => {
           : {}),
       }
 
-      const response = await fetch(`${API_BASE}/api/cost-estimate`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify(requestPayload),
+      const responsePayload = await submitFormJson<{
+        ok: true
+        estimate?: number
+        formattedEstimate?: string
+      }, typeof requestPayload>({
+        path: '/api/cost-estimate',
+        payload: requestPayload,
       })
 
-      const payload = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        throw new Error(payload?.error || 'Ошибка отправки')
-      }
-
       const formattedEstimate =
-        payload?.formattedEstimate || (payload?.estimate ? formatRubles(payload.estimate) : '')
+        responsePayload?.formattedEstimate ||
+        (responsePayload?.estimate ? formatRubles(responsePayload.estimate) : '')
 
       if (formattedEstimate) {
         setEstimate(formattedEstimate)
@@ -266,23 +263,25 @@ const CostCalculator = () => {
       })
     } catch (error) {
       setStatus('error')
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (error instanceof FormSubmissionError && error.kind === 'timeout') {
         trackGoal('calculator_error', {
           cta_location: CALCULATOR_LOCATION,
           source_context: CALCULATOR_LOCATION,
           error_type: 'timeout',
         })
-        setError('Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.')
       } else {
         trackGoal('calculator_error', {
           cta_location: CALCULATOR_LOCATION,
           source_context: CALCULATOR_LOCATION,
           error_type: 'request',
         })
-        setError('Не удалось выполнить расчет. Попробуйте позже или позвоните нам.')
       }
-    } finally {
-      window.clearTimeout(timeoutId)
+      setError(
+        getSubmissionErrorMessage(error, {
+          timeout: 'Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.',
+          request: 'Не удалось выполнить расчет. Попробуйте позже или позвоните нам.',
+        }),
+      )
     }
   }
 
@@ -433,7 +432,7 @@ const CostCalculator = () => {
             setFieldErrors((current) => ({ ...current, phone: '' }))
           }}
           placeholder="+7 (___) ___-__-__"
-          pattern="[0-9+()\\s-]{7,20}"
+          pattern={PHONE_INPUT_PATTERN.source}
           autoComplete="tel"
           error={fieldErrors.phone}
           ref={phoneRef}
