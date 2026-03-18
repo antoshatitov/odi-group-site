@@ -1,8 +1,8 @@
 server {
   listen 80;
-  server_name odi-group.ru www.odi-group.ru;
+  server_name example.com www.example.com;
 
-  root /var/www/sites/odi/web/dist;
+  root /var/www/sites/site/web/dist;
   index index.html;
 
   etag on;

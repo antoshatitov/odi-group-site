@@ -1,5 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 
 import Badge from '../components/Badge'
 import Card from '../components/Card'
@@ -9,13 +8,18 @@ import Modal from '../components/Modal'
 import Section from '../components/Section'
 import { SHOW_PROJECTS } from '../config/featureFlags'
 import { projects } from '../data/projects'
+import { useDeferredMapScript } from '../hooks/useDeferredMapScript'
+import { useGalleryModalNavigation } from '../hooks/useGalleryModalNavigation'
+import { useLazyGalleryData } from '../hooks/useLazyGalleryData'
+import { useProjectFilters } from '../hooks/useProjectFilters'
 import ContactsSection from '../sections/ContactsSection'
 import GallerySection from '../sections/GallerySection'
 import HeroSection from '../sections/HeroSection'
 import ProjectsSection from '../sections/ProjectsSection'
 import ServicesSection from '../sections/ServicesSection'
-import type { GalleryItem, Project, ResponsiveImageFormat } from '../types'
+import type { GalleryItem, Project } from '../types'
 import { trackGoal } from '../utils/analytics'
+import { buildResponsiveSrcSet } from '../utils/images'
 import { formatArea, formatPrice } from '../utils/format'
 
 const services = [
@@ -83,157 +87,27 @@ const mapScriptSrc =
 
 const CostCalculator = lazy(() => import('../components/CostCalculator'))
 
-type ProjectFilters = {
-  area: string
-  floors: string
-  budget: string
-  bedrooms: string
-}
-
-const FILTERS_SYNC_DELAY_MS = 300
-
-const parseNumberParam = (value: string | null) =>
-  value && /^[0-9]+([.,][0-9]+)?$/.test(value) ? value.replace(',', '.') : ''
-
-const parseFiltersFromParams = (params: URLSearchParams): ProjectFilters => {
-  const floors = params.get('floors')
-  return {
-    area: parseNumberParam(params.get('area')),
-    floors: floors === '1' || floors === '2' ? floors : 'any',
-    budget: parseNumberParam(params.get('budget')),
-    bedrooms: parseNumberParam(params.get('bedrooms')),
-  }
-}
-
-const buildSearchParams = (filters: ProjectFilters) => {
-  const params = new URLSearchParams()
-  if (filters.area) params.set('area', filters.area)
-  if (filters.floors !== 'any') params.set('floors', filters.floors)
-  if (filters.budget) params.set('budget', filters.budget)
-  if (filters.bedrooms) params.set('bedrooms', filters.bedrooms)
-  return params
-}
-
-const areFiltersEqual = (left: ProjectFilters, right: ProjectFilters) =>
-  left.area === right.area &&
-  left.floors === right.floors &&
-  left.budget === right.budget &&
-  left.bedrooms === right.bedrooms
-
-const buildSrcSet = (
-  small: ResponsiveImageFormat | undefined,
-  large: ResponsiveImageFormat | undefined,
-) => {
-  if (!small) return ''
-  if (!large || large.src === small.src) {
-    return `${small.src} ${small.width}w`
-  }
-
-  return `${small.src} ${small.width}w, ${large.src} ${large.width}w`
-}
-
 const Home = () => {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const urlFilters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams])
-  const [filters, setFilters] = useState<ProjectFilters>(() => urlFilters)
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
-  const [isGalleryLoading, setIsGalleryLoading] = useState(true)
-  const [galleryLoadError, setGalleryLoadError] = useState<string | null>(null)
+  const { filters, setFilters, filteredProjects } = useProjectFilters(projects)
+  const { galleryItems, isGalleryLoading, galleryLoadError } = useLazyGalleryData()
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
-  const [isProcessVisible, setIsProcessVisible] = useState(false)
-  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const [isProcessVisible, setIsProcessVisible] = useState(() => !('IntersectionObserver' in window))
+  const mapContainerRef = useDeferredMapScript(mapScriptSrc)
   const processTimelineRef = useRef<HTMLDivElement | null>(null)
+
+  const { activeGalleryPhoto, handleGalleryPrev, handleGalleryNext } =
+    useGalleryModalNavigation(activeGallery, activeGalleryIndex, setActiveGalleryIndex)
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
   }, [])
 
   useEffect(() => {
-    setFilters((current) => (areFiltersEqual(current, urlFilters) ? current : urlFilters))
-  }, [urlFilters])
-
-  useEffect(() => {
-    if (areFiltersEqual(filters, urlFilters)) return
-
-    const timeoutId = window.setTimeout(() => {
-      setSearchParams(buildSearchParams(filters), { replace: true })
-    }, FILTERS_SYNC_DELAY_MS)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [filters, setSearchParams, urlFilters])
-
-  useEffect(() => {
-    let mounted = true
-
-    const loadGalleryItems = async () => {
-      try {
-        const galleryModule = await import('../data/gallery')
-        if (!mounted) return
-        setGalleryItems(galleryModule.galleryItems)
-        setGalleryLoadError(null)
-      } catch (error) {
-        if (!mounted) return
-        setGalleryItems([])
-        setGalleryLoadError(error instanceof Error ? error.message : 'Не удалось загрузить галерею')
-      } finally {
-        if (mounted) {
-          setIsGalleryLoading(false)
-        }
-      }
-    }
-
-    loadGalleryItems()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  useEffect(() => {
-    const container = mapContainerRef.current
-    if (!container || container.dataset.mapInitialized === 'true') return
-
-    const loadMap = () => {
-      if (!container || container.dataset.mapInitialized === 'true') return
-      const script = document.createElement('script')
-      script.src = mapScriptSrc
-      script.async = true
-      script.charset = 'utf-8'
-      container.appendChild(script)
-      container.dataset.mapInitialized = 'true'
-    }
-
-    if (!('IntersectionObserver' in window)) {
-      loadMap()
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          loadMap()
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '200px 0px' },
-    )
-
-    observer.observe(container)
-
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
     const timeline = processTimelineRef.current
     if (!timeline || isProcessVisible) return
-
-    if (!('IntersectionObserver' in window)) {
-      setIsProcessVisible(true)
-      return
-    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -254,37 +128,6 @@ const Home = () => {
   }, [isProcessVisible])
 
   useEffect(() => {
-    if (!activeGallery || activeGallery.photos.length === 0) return
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowRight') {
-        setActiveGalleryIndex((index) => (index + 1) % activeGallery.photos.length)
-      }
-      if (event.key === 'ArrowLeft') {
-        setActiveGalleryIndex(
-          (index) => (index - 1 + activeGallery.photos.length) % activeGallery.photos.length,
-        )
-      }
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [activeGallery])
-
-  useEffect(() => {
-    if (!activeGallery || activeGallery.photos.length < 2) return
-
-    const photosCount = activeGallery.photos.length
-    const prevIndex = (activeGalleryIndex - 1 + photosCount) % photosCount
-    const nextIndex = (activeGalleryIndex + 1) % photosCount
-    const preloadIndexes = Array.from(new Set([prevIndex, nextIndex]))
-
-    for (const index of preloadIndexes) {
-      const preloadImage = new Image()
-      preloadImage.decoding = 'async'
-      preloadImage.src = activeGallery.photos[index].full.webp.src
-    }
-  }, [activeGallery, activeGalleryIndex])
-
-  useEffect(() => {
     if (!isCalculatorOpen) return
     trackGoal('calculator_open', {
       cta_location: 'hero',
@@ -292,37 +135,13 @@ const Home = () => {
     })
   }, [isCalculatorOpen])
 
-  const filteredProjects = useMemo(() => {
-    return projects.filter((project) => {
-      const areaOk = filters.area ? project.area >= Number(filters.area) : true
-      const budgetOk = filters.budget ? project.priceFrom >= Number(filters.budget) : true
-      const bedroomsOk = filters.bedrooms ? project.bedrooms >= Number(filters.bedrooms) : true
-      const floorsOk = filters.floors === 'any' ? true : project.floors === Number(filters.floors)
-      return areaOk && budgetOk && bedroomsOk && floorsOk
-    })
-  }, [filters])
-
   const openGallery = (item: GalleryItem) => {
     setActiveGallery(item)
     setActiveGalleryIndex(0)
   }
 
-  const handleFiltersChange = (nextFilters: ProjectFilters) => {
+  const handleFiltersChange = (nextFilters: typeof filters) => {
     setFilters(nextFilters)
-  }
-
-  const activeGalleryPhoto = activeGallery?.photos[activeGalleryIndex]
-
-  const handleGalleryPrev = () => {
-    if (!activeGallery || activeGallery.photos.length === 0) return
-    setActiveGalleryIndex(
-      (index) => (index - 1 + activeGallery.photos.length) % activeGallery.photos.length,
-    )
-  }
-
-  const handleGalleryNext = () => {
-    if (!activeGallery || activeGallery.photos.length === 0) return
-    setActiveGalleryIndex((index) => (index + 1) % activeGallery.photos.length)
   }
 
   return (
@@ -593,21 +412,21 @@ const Home = () => {
                     aria-label={`Показать фото ${index + 1}`}
                   >
                     <picture>
-                      {buildSrcSet(image.thumb.avif, image.cover.avif) ? (
+                      {buildResponsiveSrcSet(image.thumb.avif, image.cover.avif) ? (
                         <source
                           type="image/avif"
-                          srcSet={buildSrcSet(image.thumb.avif, image.cover.avif)}
+                          srcSet={buildResponsiveSrcSet(image.thumb.avif, image.cover.avif)}
                           sizes="(max-width: 768px) 28vw, 96px"
                         />
                       ) : null}
                       <source
                         type="image/webp"
-                        srcSet={buildSrcSet(image.thumb.webp, image.cover.webp)}
+                        srcSet={buildResponsiveSrcSet(image.thumb.webp, image.cover.webp)}
                         sizes="(max-width: 768px) 28vw, 96px"
                       />
                       <img
                         src={image.thumb.jpg.src}
-                        srcSet={buildSrcSet(image.thumb.jpg, image.cover.jpg)}
+                        srcSet={buildResponsiveSrcSet(image.thumb.jpg, image.cover.jpg)}
                         sizes="(max-width: 768px) 28vw, 96px"
                         alt={image.alt}
                         width={image.thumb.jpg.width}
@@ -627,10 +446,10 @@ const Home = () => {
           <div className="gallery-modal">
             <div className="gallery-main">
               <picture>
-                {buildSrcSet(activeGalleryPhoto.cover.avif, activeGalleryPhoto.full.avif) ? (
+                {buildResponsiveSrcSet(activeGalleryPhoto.cover.avif, activeGalleryPhoto.full.avif) ? (
                   <source
                     type="image/avif"
-                    srcSet={buildSrcSet(
+                    srcSet={buildResponsiveSrcSet(
                       activeGalleryPhoto.cover.avif,
                       activeGalleryPhoto.full.avif,
                     )}
@@ -639,12 +458,18 @@ const Home = () => {
                 ) : null}
                 <source
                   type="image/webp"
-                  srcSet={buildSrcSet(activeGalleryPhoto.cover.webp, activeGalleryPhoto.full.webp)}
+                  srcSet={buildResponsiveSrcSet(
+                    activeGalleryPhoto.cover.webp,
+                    activeGalleryPhoto.full.webp,
+                  )}
                   sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
                 />
                 <img
                   src={activeGalleryPhoto.full.jpg.src}
-                  srcSet={buildSrcSet(activeGalleryPhoto.cover.jpg, activeGalleryPhoto.full.jpg)}
+                  srcSet={buildResponsiveSrcSet(
+                    activeGalleryPhoto.cover.jpg,
+                    activeGalleryPhoto.full.jpg,
+                  )}
                   sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
                   alt={activeGalleryPhoto.alt}
                   width={activeGalleryPhoto.full.jpg.width}

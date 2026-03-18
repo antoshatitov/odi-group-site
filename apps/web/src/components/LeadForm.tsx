@@ -5,7 +5,14 @@ import type { FormEvent } from 'react'
 import Button from './Button'
 import Input from './Input'
 import TextArea from './TextArea'
-import { getAttribution, trackGoal } from '../utils/analytics'
+import {
+  PHONE_INPUT_PATTERN,
+  getSubmissionErrorKind,
+  getSubmissionErrorMessage,
+  isValidPhoneNumber,
+  submitFormJson,
+} from '../lib/formSubmission'
+import { trackGoal } from '../utils/analytics'
 
 type LeadFormProps = {
   source: string
@@ -13,9 +20,6 @@ type LeadFormProps = {
   projectName?: string
 }
 
-const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
-const phonePattern = /^[0-9+()\s-]{7,20}$/
-const REQUEST_TIMEOUT_MS = 12_000
 const resolveFormLocation = (source: string) => {
   if (source === 'consultation') return 'consultation_form'
   if (source === 'project') return 'project_form'
@@ -71,7 +75,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
     if (name.trim().length < 2) {
       nextErrors.name = 'Укажите имя и фамилию.'
     }
-    if (!phonePattern.test(phone.trim())) {
+    if (!isValidPhoneNumber(phone)) {
       nextErrors.phone = 'Введите корректный номер телефона.'
     }
     if (isConsultation && message.trim().length === 0) {
@@ -109,15 +113,10 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
 
     setStatus('loading')
 
-    const controller = new AbortController()
-    const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
-
     try {
-      const response = await fetch(`${API_BASE}/api/lead`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
+      await submitFormJson<{ ok: true }, Record<string, unknown>>({
+        path: '/api/lead',
+        payload: {
           name,
           phone,
           message,
@@ -125,15 +124,10 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
           projectName,
           source,
           source_context: source,
-          ...getAttribution(),
           consent,
           website: honeypot,
-        }),
+        },
       })
-
-      if (!response.ok) {
-        throw new Error('Ошибка отправки')
-      }
 
       setStatus('success')
       trackGoal('lead_form_success', {
@@ -144,23 +138,26 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
       reset()
     } catch (error) {
       setStatus('error')
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      const errorKind = getSubmissionErrorKind(error)
+      if (errorKind === 'timeout') {
         trackGoal('lead_form_error', {
           cta_location: formLocation,
           source_context: source,
           error_type: 'timeout',
         })
-        setError('Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.')
       } else {
         trackGoal('lead_form_error', {
           cta_location: formLocation,
           source_context: source,
           error_type: 'request',
         })
-        setError('Не удалось отправить заявку. Попробуйте ещё раз или позвоните.')
       }
-    } finally {
-      window.clearTimeout(timeoutId)
+      setError(
+        getSubmissionErrorMessage(error, {
+          timeout: 'Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.',
+          request: 'Не удалось отправить заявку. Попробуйте ещё раз или позвоните.',
+        }),
+      )
     }
   }
 
@@ -204,7 +201,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
           setFieldErrors((current) => ({ ...current, phone: '' }))
         }}
         placeholder="+7 (___) ___-__-__"
-        pattern="[0-9+()\\s-]{7,20}"
+        pattern={PHONE_INPUT_PATTERN.source}
         autoComplete="tel"
         error={fieldErrors.phone}
         ref={phoneRef}

@@ -1,18 +1,61 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
     paths:
+      - ".env.example"
+      - ".gitignore"
+      - "README.md"
+      - "SECURITY.md"
       - "apps/web/**"
       - "apps/server/**"
+      - "deploy/**"
+      - "docs/**"
       - "package.json"
       - "package-lock.json"
+      - "scripts/**"
       - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
 
 jobs:
+  repo-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run repository safety checks
+        run: npm run repo:safety
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run server tests
+        run: npm run test:server
+
   web:
     runs-on: ubuntu-latest
     steps:
@@ -28,6 +71,8 @@ jobs:
       - name: Lint web
         run: npm run lint:web
       - name: Build web
+        env:
+          VITE_YM_COUNTER_ID: "1"
         run: npm run build:web
       - name: Check perf budgets
         run: npm --workspace apps/web run perf-check
@@ -47,3 +92,5 @@ jobs:
             sleep 1
           done
           E2E_BASE_URL=http://127.0.0.1:4173 npm --workspace apps/web run e2e:smoke
+      - name: Run Playwright analytics
+        run: E2E_BASE_URL=http://127.0.0.1:4173 npm --workspace apps/web run e2e:analytics

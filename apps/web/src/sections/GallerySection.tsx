@@ -1,24 +1,13 @@
 import Container from '../components/Container'
 import Section from '../components/Section'
-import type { GalleryItem, ResponsiveImageFormat } from '../types'
+import type { GalleryItem } from '../types'
+import { buildResponsiveSrcSet } from '../utils/images'
 
 type GallerySectionProps = {
   items: GalleryItem[]
   isLoading?: boolean
   loadError?: string | null
   onOpenGallery: (item: GalleryItem) => void
-}
-
-const buildSrcSet = (
-  small: ResponsiveImageFormat | undefined,
-  large: ResponsiveImageFormat | undefined,
-) => {
-  if (!small) return ''
-  if (!large || large.src === small.src) {
-    return `${small.src} ${small.width}w`
-  }
-
-  return `${small.src} ${small.width}w, ${large.src} ${large.width}w`
 }
 
 const GallerySection = ({
@@ -50,21 +39,21 @@ const GallerySection = ({
               >
                 <div className="gallery-media">
                   <picture>
-                    {buildSrcSet(item.cover.thumb.avif, item.cover.cover.avif) ? (
+                    {buildResponsiveSrcSet(item.cover.thumb.avif, item.cover.cover.avif) ? (
                       <source
                         type="image/avif"
-                        srcSet={buildSrcSet(item.cover.thumb.avif, item.cover.cover.avif)}
+                        srcSet={buildResponsiveSrcSet(item.cover.thumb.avif, item.cover.cover.avif)}
                         sizes="(max-width: 640px) calc(100vw - 2.4rem), (max-width: 1024px) calc((100vw - 4.4rem) / 2), 23rem"
                       />
                     ) : null}
                     <source
                       type="image/webp"
-                      srcSet={buildSrcSet(item.cover.thumb.webp, item.cover.cover.webp)}
+                      srcSet={buildResponsiveSrcSet(item.cover.thumb.webp, item.cover.cover.webp)}
                       sizes="(max-width: 640px) calc(100vw - 2.4rem), (max-width: 1024px) calc((100vw - 4.4rem) / 2), 23rem"
                     />
                     <img
                       src={item.cover.cover.jpg.src}
-                      srcSet={buildSrcSet(item.cover.thumb.jpg, item.cover.cover.jpg)}
+                      srcSet={buildResponsiveSrcSet(item.cover.thumb.jpg, item.cover.cover.jpg)}
                       sizes="(max-width: 640px) calc(100vw - 2.4rem), (max-width: 1024px) calc((100vw - 4.4rem) / 2), 23rem"
                       alt={item.cover.alt}
                       width={item.cover.cover.jpg.width}
