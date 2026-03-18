@@ -7,7 +7,7 @@ const trackedFiles = execFileSync('git', ['ls-files', '-z'], {
   .split('\0')
   .filter(Boolean)
 
-const issues = []
+const issues = new Set()
 
 const forbiddenPathRules = [
   {
@@ -71,8 +71,11 @@ const secretContentPatterns = [
   /BEGIN CERTIFICATE/,
 ]
 
+const contentScanIgnoreList = new Set(['scripts/repo-safety.mjs'])
+
 for (const filePath of trackedFiles) {
   if (!fs.existsSync(filePath)) continue
+  if (contentScanIgnoreList.has(filePath)) continue
   const stat = fs.statSync(filePath)
   if (!stat.isFile() || stat.size > 1024 * 1024) continue
 
@@ -85,12 +88,12 @@ for (const filePath of trackedFiles) {
 
   for (const pattern of secretContentPatterns) {
     if (pattern.test(content)) {
-      issues.push(`${filePath}: secret material detected by content signature`)
+      issues.add(`${filePath}: secret material detected by content signature`)
     }
   }
 }
 
-if (issues.length > 0) {
+if (issues.size > 0) {
   console.error('Repository safety check failed:\n')
   for (const issue of issues) {
     console.error(`- ${issue}`)
