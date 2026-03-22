@@ -8,6 +8,27 @@ const trackedFiles = execFileSync('git', ['ls-files', '-z'], {
   .filter(Boolean)
 
 const issues = new Set()
+const allowedTopLevelSkills = new Set([
+  'agent-browser',
+  'frontend-design',
+  'frontend-responsive-ui',
+  'vercel-react-best-practices',
+  'web-design-guidelines',
+])
+
+if (fs.existsSync('skills-lock.json')) {
+  issues.add('skills-lock.json: skills-lock.json is forbidden in the public repository')
+}
+
+if (fs.existsSync('.agents/skills')) {
+  for (const entry of fs.readdirSync('.agents/skills', { withFileTypes: true })) {
+    if (!allowedTopLevelSkills.has(entry.name)) {
+      issues.add(
+        `.agents/skills/${entry.name}: unexpected top-level entry in .agents/skills`,
+      )
+    }
+  }
+}
 
 const forbiddenPathRules = [
   {
@@ -34,7 +55,7 @@ for (const filePath of trackedFiles) {
   if (!fs.existsSync(filePath)) continue
   for (const rule of forbiddenPathRules) {
     if (rule.test(filePath)) {
-      issues.push(`${filePath}: ${rule.message}`)
+      issues.add(`${filePath}: ${rule.message}`)
     }
   }
 }
@@ -59,7 +80,7 @@ for (const filePath of publicDocs) {
   const content = fs.readFileSync(filePath, 'utf8')
   for (const rule of forbiddenPublicDocPatterns) {
     if (rule.pattern.test(content)) {
-      issues.push(`${filePath}: ${rule.message}`)
+      issues.add(`${filePath}: ${rule.message}`)
     }
   }
 }

@@ -11,6 +11,8 @@
     "lint:web": "npm --workspace apps/web run lint",
     "format:web": "npm --workspace apps/web run format",
     "preview:web": "npm --workspace apps/web run preview",
+    "agent-browser:check": "node scripts/agent-browser-check.mjs",
+    "agent-browser:smoke": "node scripts/agent-browser-smoke.mjs",
     "playwright:install:web": "npm --workspace apps/web run playwright:install",
     "test:e2e:web": "npm --workspace apps/web run e2e:smoke",
     "test:e2e:analytics:web": "npm --workspace apps/web run e2e:analytics",
@@ -20,6 +22,7 @@
     "start:server": "npm --workspace apps/server run start"
   },
   "devDependencies": {
+    "agent-browser": "^0.21.4",
     "playwright": "^1.58.1"
   }
 }

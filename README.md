@@ -38,6 +38,47 @@ npm run dev:web
 
 Фронтенд будет доступен на `http://localhost:5173`.
 
+Проект ориентирован на Node.js 20+, а локальная версия зафиксирована в `.nvmrc`.
+
+## GitHub CLI workflow
+
+Работаем через HTTPS remote, чтобы `gh` мог использовать GitHub credentials без SSH-ключей.
+
+1. Проверьте remote:
+
+```bash
+git remote -v
+```
+
+2. Если `origin` ещё в SSH-формате, переведите его на HTTPS:
+
+```bash
+git remote set-url origin https://github.com/<owner>/<repo>.git
+```
+
+3. Авторизуйтесь в GitHub CLI:
+
+```bash
+gh auth login --hostname github.com --web --git-protocol https
+```
+
+4. Подключите `gh` к Git credential helper:
+
+```bash
+gh auth setup-git
+```
+
+5. Быстрая проверка:
+
+```bash
+gh auth status
+gh repo view antoshatitov/odi-group
+git remote -v
+```
+
+Если `gh auth status` показывает активную сессию, а remote остаётся HTTPS, GitHub CLI workflow
+готов к работе.
+
 ## Переменные окружения
 
 `.env.example` содержит только безопасные плейсхолдеры и значения по умолчанию.
@@ -75,6 +116,8 @@ npm run dev:web
 - `npm run lint:web` — ESLint для frontend
 - `npm run format:web` — Prettier для frontend
 - `npm run preview:web` — preview production build
+- `npm run agent-browser:check` — проверка локального `agent-browser` CLI и browser runtime
+- `npm run agent-browser:smoke` — read-only smoke для локального frontend через `agent-browser`
 - `npm run dev:server` — backend в watch-режиме
 - `npm run start:server` — backend без watch
 - `npm run test:server` — серверные тесты
@@ -107,6 +150,39 @@ npm run test:e2e:web
 ```bash
 npm run test:e2e:analytics:web
 ```
+
+## agent-browser setup, check, smoke
+
+`agent-browser` используется только для read-only browser checks. Версия CLI pinned в
+`devDependencies`, а первый browser runtime ставится отдельно.
+
+1. Установите npm-зависимости:
+
+```bash
+npm install
+```
+
+2. Скачайте Chrome runtime для `agent-browser`:
+
+```bash
+npx agent-browser install
+```
+
+3. Проверьте CLI и browser runtime:
+
+```bash
+npm run agent-browser:check
+```
+
+4. Прогоните локальный smoke для frontend:
+
+```bash
+npm run agent-browser:smoke
+```
+
+`agent-browser:smoke` сам собирает `apps/web`, поднимает `vite preview`, открывает локальную
+страницу, снимает `snapshot -i`, проверяет заголовок и базовую mobile navigation без отправки
+форм и без реальных side effects.
 
 ## Public Repo Safety
 
