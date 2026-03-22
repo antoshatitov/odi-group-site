@@ -3,13 +3,14 @@ import { useEffect, useRef, useState } from 'react'
 import Button from './Button'
 import { SHOW_PROJECTS } from '../config/featureFlags'
 import { trackGoal } from '../utils/analytics'
+import { resolveHomeSectionHref } from '../utils/navigation'
 
 const navLinks = [
-  { label: 'О компании', href: '/#about' },
-  { label: 'Услуги', href: '/#services' },
-  { label: 'Проекты', href: '/#projects' },
-  { label: 'Построено', href: '/#gallery' },
-  { label: 'Контакты', href: '/#contacts' },
+  { label: 'О компании', hash: '#about' },
+  { label: 'Услуги', hash: '#services' },
+  { label: 'Проекты', hash: '#projects' },
+  { label: 'Построено', hash: '#gallery' },
+  { label: 'Контакты', hash: '#contacts' },
 ]
 
 const mobileNavPanelId = 'mobile-nav-panel'
@@ -20,7 +21,7 @@ const SiteHeader = () => {
   const menuToggleRef = useRef<HTMLButtonElement | null>(null)
   const visibleLinks = SHOW_PROJECTS
     ? navLinks
-    : navLinks.filter((link) => link.href !== '/#projects')
+    : navLinks.filter((link) => link.hash !== '#projects')
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -103,7 +104,7 @@ const SiteHeader = () => {
         </a>
         <nav className="nav-links" aria-label="Основная навигация">
           {visibleLinks.map((link) => (
-            <a key={link.href} href={link.href} className="nav-link">
+            <a key={link.hash} href={resolveHomeSectionHref(link.hash)} className="nav-link">
               {link.label}
             </a>
           ))}
@@ -124,7 +125,7 @@ const SiteHeader = () => {
           </a>
           <a
             className="btn btn-primary btn-sm"
-            href="/#consultation"
+            href={resolveHomeSectionHref('#consultation')}
             onClick={() =>
               trackGoal('header_consultation_click', {
                 cta_location: 'header',
@@ -175,7 +176,11 @@ const SiteHeader = () => {
             </div>
             <div className="mobile-nav-links">
               {visibleLinks.map((link) => (
-                <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+                <a
+                  key={link.hash}
+                  href={resolveHomeSectionHref(link.hash)}
+                  onClick={() => setOpen(false)}
+                >
                   {link.label}
                 </a>
               ))}
@@ -209,7 +214,11 @@ const SiteHeader = () => {
               >
                 Telegram
               </a>
-              <a className="btn btn-primary" href="/#consultation" onClick={() => setOpen(false)}>
+              <a
+                className="btn btn-primary"
+                href={resolveHomeSectionHref('#consultation')}
+                onClick={() => setOpen(false)}
+              >
                 Получить консультацию
               </a>
             </div>

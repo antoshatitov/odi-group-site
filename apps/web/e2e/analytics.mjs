@@ -20,9 +20,16 @@ const previewArgs = ['run', 'preview', '--', '--host', '127.0.0.1', '--port', St
 const requiredGoals = [
   'hero_cta_telegram_click',
   'hero_cta_call_click',
+  'hero_cta_calculator_click',
   'header_phone_click',
+  'header_consultation_click',
+  'mobile_menu_call_click',
+  'mobile_menu_telegram_click',
+  'contacts_phone_click',
   'contacts_telegram_click',
+  'footer_phone_click',
   'lead_form_success',
+  'calculator_open',
   'calculator_success',
 ]
 const requiredGoalPayloadKeys = [
@@ -274,7 +281,13 @@ const runAnalyticsChecks = async (url) => {
     await page.locator('a.header-phone').click()
     await waitForGoalCount(page, 'header_phone_click')
 
+    await page.locator('.header-actions a').filter({ hasText: 'Получить консультацию' }).click()
+    await waitForGoalCount(page, 'header_consultation_click')
+
     await page.locator('#contacts').scrollIntoViewIfNeeded()
+    await page.locator('#contacts a[href^="tel:"]').first().click()
+    await waitForGoalCount(page, 'contacts_phone_click')
+
     await page.locator('#contacts a[href^="https://t.me/"]').first().click()
     await waitForGoalCount(page, 'contacts_telegram_click')
 
@@ -290,6 +303,9 @@ const runAnalyticsChecks = async (url) => {
     await waitForGoalCount(page, 'lead_form_success')
 
     await page.locator('.hero button:has-text("Расчет стоимости")').first().click()
+    await waitForGoalCount(page, 'hero_cta_calculator_click')
+    await waitForGoalCount(page, 'calculator_open')
+
     const calculatorDialog = page.getByRole('dialog', { name: 'Расчет стоимости строительства' })
     await calculatorDialog.waitFor({ state: 'visible' })
 
@@ -307,6 +323,27 @@ const runAnalyticsChecks = async (url) => {
       calculatorForm.getByRole('button', { name: 'Расчет стоимости' }).click(),
     ])
     await waitForGoalCount(page, 'calculator_success')
+    await calculatorDialog.getByRole('button', { name: 'Закрыть модальное окно' }).click()
+    await calculatorDialog.waitFor({ state: 'hidden' })
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.getByRole('button', { name: 'Меню' }).waitFor()
+
+    await page.getByRole('button', { name: 'Меню' }).click()
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'visible' })
+    await page.locator('.mobile-nav-actions a[href^="tel:"]').click()
+    await waitForGoalCount(page, 'mobile_menu_call_click')
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'hidden' })
+
+    await page.getByRole('button', { name: 'Меню' }).click()
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'visible' })
+    await page.locator('.mobile-nav-actions a[href^="https://t.me/"]').click()
+    await waitForGoalCount(page, 'mobile_menu_telegram_click')
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'hidden' })
+
+    await page.locator('.site-footer').scrollIntoViewIfNeeded()
+    await page.locator('.site-footer a[href^="tel:"]').click()
+    await waitForGoalCount(page, 'footer_phone_click')
 
     const goalEvents = await collectGoalEvents(page)
     assert(goalEvents.length > 0, 'No Yandex Metrika goals were captured. Set VITE_YM_COUNTER_ID before build.')

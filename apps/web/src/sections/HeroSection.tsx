@@ -5,6 +5,7 @@ import Container from '../components/Container'
 import Section from '../components/Section'
 import { SHOW_PROJECTS } from '../config/featureFlags'
 import { trackGoal } from '../utils/analytics'
+import { resolveHomeSectionHref } from '../utils/navigation'
 
 type HeroSectionProps = {
   onOpenCalculator: () => void
@@ -113,7 +114,7 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
                 Расчет стоимости
               </Button>
               {SHOW_PROJECTS && (
-                <a className="btn btn-outline btn-lg" href="/#projects">
+                <a className="btn btn-outline btn-lg" href={resolveHomeSectionHref('#projects')}>
                   Смотреть проекты
                 </a>
               )}
