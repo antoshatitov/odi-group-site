@@ -36,8 +36,10 @@ npm --workspace apps/web run e2e:analytics
 
 Что проверяет `e2e:analytics`:
 
-- цели `hero_cta_telegram_click`, `hero_cta_call_click`, `header_phone_click`,
-  `contacts_telegram_click`, `lead_form_success`, `calculator_success`;
+- цели `hero_cta_telegram_click`, `hero_cta_call_click`, `hero_cta_calculator_click`,
+  `header_phone_click`, `header_consultation_click`, `mobile_menu_call_click`,
+  `mobile_menu_telegram_click`, `contacts_phone_click`, `contacts_telegram_click`,
+  `footer_phone_click`, `lead_form_success`, `calculator_open`, `calculator_success`;
 - обязательные поля payload: `page_path`, `cta_location`, `source_context`,
   `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `referrer_domain`;
 - отсутствие PII (`name`, `phone`, `message`) в аналитических payload;
@@ -46,13 +48,21 @@ npm --workspace apps/web run e2e:analytics
 
 ## 3) Настройка целей в Яндекс.Метрике
 
-В счетчике создайте 5 целей типа "JavaScript-событие":
+В счетчике создайте цели типа "JavaScript-событие":
 
-- `lead_form_success`
-- `calculator_success`
-- `header_phone_click`
-- `contacts_telegram_click`
 - `hero_cta_telegram_click`
+- `hero_cta_call_click`
+- `hero_cta_calculator_click`
+- `header_phone_click`
+- `header_consultation_click`
+- `mobile_menu_call_click`
+- `mobile_menu_telegram_click`
+- `contacts_phone_click`
+- `contacts_telegram_click`
+- `footer_phone_click`
+- `lead_form_success`
+- `calculator_open`
+- `calculator_success`
 
 Проверка:
 
@@ -98,7 +108,10 @@ https://odi-group.ru/?utm_source=2gis&utm_medium=card&utm_campaign=brand_profile
 Минимальный еженедельный набор:
 
 1. Сессии по источникам (`yandex_*`, `2gis`).
-2. CTR CTA: `(hero_cta_telegram_click + contacts_telegram_click + header_phone_click) / sessions`.
-3. CR в лид: `lead_form_success / sessions`.
-4. CR калькулятора: `calculator_success / sessions`.
-5. Mobile вклад: доля mobile-сессий и mobile-конверсия в `lead_form_success`.
+2. CTR контактных CTA:
+   `(hero_cta_telegram_click + hero_cta_call_click + header_phone_click + contacts_phone_click + contacts_telegram_click + footer_phone_click + mobile_menu_call_click + mobile_menu_telegram_click) / sessions`.
+3. CTR консультации: `header_consultation_click / sessions`.
+4. CTR открытия калькулятора: `hero_cta_calculator_click / sessions`.
+5. CR в лид: `lead_form_success / sessions`.
+6. CR калькулятора: `calculator_success / sessions`.
+7. Mobile вклад: доля mobile-сессий и mobile-конверсия в `lead_form_success`.

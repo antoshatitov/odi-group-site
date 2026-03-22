@@ -6,9 +6,16 @@
 - [ ] Выполнено: `npm --workspace apps/web run e2e:analytics`.
 - [ ] Срабатывает `hero_cta_telegram_click` ровно 1 раз.
 - [ ] Срабатывает `hero_cta_call_click` ровно 1 раз.
+- [ ] Срабатывает `hero_cta_calculator_click` ровно 1 раз.
 - [ ] Срабатывает `header_phone_click` ровно 1 раз.
+- [ ] Срабатывает `header_consultation_click` ровно 1 раз.
+- [ ] Срабатывает `mobile_menu_call_click` ровно 1 раз.
+- [ ] Срабатывает `mobile_menu_telegram_click` ровно 1 раз.
+- [ ] Срабатывает `contacts_phone_click` ровно 1 раз.
 - [ ] Срабатывает `contacts_telegram_click` ровно 1 раз.
+- [ ] Срабатывает `footer_phone_click` ровно 1 раз.
 - [ ] Срабатывает `lead_form_success` после mock-submit формы.
+- [ ] Срабатывает `calculator_open` после открытия модалки калькулятора.
 - [ ] Срабатывает `calculator_success` после mock-submit калькулятора.
 - [ ] В payload каждого события присутствуют `page_path`, `cta_location`, `source_context`,
       `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `referrer_domain`.
@@ -35,11 +42,19 @@
 - [ ] На проде открыт сайт и проверено, что счетчик инициализируется без ошибок в консоли.
 
 ### 2.2 Цели в Яндекс.Метрике
-- [ ] Создана цель `lead_form_success` (JavaScript-событие).
-- [ ] Создана цель `calculator_success` (JavaScript-событие).
-- [ ] Создана цель `header_phone_click` (JavaScript-событие).
-- [ ] Создана цель `contacts_telegram_click` (JavaScript-событие).
 - [ ] Создана цель `hero_cta_telegram_click` (JavaScript-событие).
+- [ ] Создана цель `hero_cta_call_click` (JavaScript-событие).
+- [ ] Создана цель `hero_cta_calculator_click` (JavaScript-событие).
+- [ ] Создана цель `header_phone_click` (JavaScript-событие).
+- [ ] Создана цель `header_consultation_click` (JavaScript-событие).
+- [ ] Создана цель `mobile_menu_call_click` (JavaScript-событие).
+- [ ] Создана цель `mobile_menu_telegram_click` (JavaScript-событие).
+- [ ] Создана цель `contacts_phone_click` (JavaScript-событие).
+- [ ] Создана цель `contacts_telegram_click` (JavaScript-событие).
+- [ ] Создана цель `footer_phone_click` (JavaScript-событие).
+- [ ] Создана цель `lead_form_success` (JavaScript-событие).
+- [ ] Создана цель `calculator_open` (JavaScript-событие).
+- [ ] Создана цель `calculator_success` (JavaScript-событие).
 - [ ] Проверено в «Отладке Метрики»/реальном времени, что цели достигаются.
 
 ### 2.3 UTM-разметка для Яндекс и 2ГИС
