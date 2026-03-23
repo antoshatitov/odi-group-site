@@ -200,6 +200,7 @@ npm run agent-browser:smoke
 - `deploy/lead-api.service.example`
 - `deploy/bootstrap-vps.sh`
 - `deploy/deploy-app-only.sh`
+- `docs/deploy-runbook.md`
 
 Эти файлы требуют локальной адаптации под конкретное окружение и не должны рассматриваться как
 готовая production-конфигурация.
