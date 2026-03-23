@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import Button from './Button'
 import { SHOW_PROJECTS } from '../config/featureFlags'
@@ -95,62 +96,8 @@ const SiteHeader = () => {
     }
   }, [open])
 
-  return (
-    <header className="site-header">
-      <div className="container header-inner">
-        <a className="logo" href="/">
-          <img src="/images/logo.png" alt="ОДИ" width={240} height={70} />
-          <small>строительная компания</small>
-        </a>
-        <nav className="nav-links" aria-label="Основная навигация">
-          {visibleLinks.map((link) => (
-            <a key={link.hash} href={resolveHomeSectionHref(link.hash)} className="nav-link">
-              {link.label}
-            </a>
-          ))}
-        </nav>
-        <div className="header-actions">
-          <a
-            className="btn btn-outline btn-sm header-phone"
-            href="tel:+79244422800"
-            aria-label="Позвонить"
-            onClick={() =>
-              trackGoal('header_phone_click', {
-                cta_location: 'header',
-                source_context: 'header_phone',
-              })
-            }
-          >
-            <span className="header-phone-text">+7 924 442-28-00</span>
-          </a>
-          <a
-            className="btn btn-primary btn-sm"
-            href={resolveHomeSectionHref('#consultation')}
-            onClick={() =>
-              trackGoal('header_consultation_click', {
-                cta_location: 'header',
-                source_context: 'header_consultation',
-              })
-            }
-          >
-            Получить консультацию
-          </a>
-          <Button
-            ref={menuToggleRef}
-            className="menu-toggle"
-            variant="ghost"
-            size="sm"
-            type="button"
-            aria-haspopup="dialog"
-            aria-expanded={open}
-            aria-controls={mobileNavPanelId}
-            onClick={() => setOpen(true)}
-          >
-            Меню
-          </Button>
-        </div>
-      </div>
-      {open && (
+  const mobileNav = open
+    ? createPortal(
         <div
           className="mobile-nav"
           role="dialog"
@@ -223,9 +170,70 @@ const SiteHeader = () => {
               </a>
             </div>
           </div>
+        </div>,
+        document.body,
+      )
+    : null
+
+  return (
+    <>
+      <header className="site-header">
+        <div className="container header-inner">
+          <a className="logo" href="/">
+            <img src="/images/logo.png" alt="ОДИ" width={240} height={70} />
+            <small>строительная компания</small>
+          </a>
+          <nav className="nav-links" aria-label="Основная навигация">
+            {visibleLinks.map((link) => (
+              <a key={link.hash} href={resolveHomeSectionHref(link.hash)} className="nav-link">
+                {link.label}
+              </a>
+            ))}
+          </nav>
+          <div className="header-actions">
+            <a
+              className="btn btn-outline btn-sm header-phone"
+              href="tel:+79244422800"
+              aria-label="Позвонить"
+              onClick={() =>
+                trackGoal('header_phone_click', {
+                  cta_location: 'header',
+                  source_context: 'header_phone',
+                })
+              }
+            >
+              <span className="header-phone-text">+7 924 442-28-00</span>
+            </a>
+            <a
+              className="btn btn-primary btn-sm"
+              href={resolveHomeSectionHref('#consultation')}
+              onClick={() =>
+                trackGoal('header_consultation_click', {
+                  cta_location: 'header',
+                  source_context: 'header_consultation',
+                })
+              }
+            >
+              Получить консультацию
+            </a>
+            <Button
+              ref={menuToggleRef}
+              className="menu-toggle"
+              variant="ghost"
+              size="sm"
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={open}
+              aria-controls={mobileNavPanelId}
+              onClick={() => setOpen(true)}
+            >
+              Меню
+            </Button>
+          </div>
         </div>
-      )}
-    </header>
+      </header>
+      {mobileNav}
+    </>
   )
 }
 
