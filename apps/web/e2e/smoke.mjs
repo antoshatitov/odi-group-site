@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
@@ -118,6 +119,47 @@ const runSmokeChecks = async (url) => {
     await mobilePage.getByRole('button', { name: 'Меню' }).click()
     const mobileMenu = mobilePage.getByRole('dialog', { name: 'Мобильное меню' })
     await mobileMenu.waitFor({ state: 'visible' })
+
+    const mobileMenuState = await mobilePage.evaluate(() => {
+      const panel = document.querySelector('.mobile-nav-panel')
+      const header = document.querySelector('.mobile-nav-header')
+      const firstLink = document.querySelector('.mobile-nav-links a')
+
+      if (
+        !(panel instanceof HTMLElement) ||
+        !(header instanceof HTMLElement) ||
+        !(firstLink instanceof HTMLElement)
+      ) {
+        return null
+      }
+
+      const headerRect = header.getBoundingClientRect()
+      const firstLinkRect = firstLink.getBoundingClientRect()
+
+      return {
+        firstLinkText: firstLink.textContent?.trim() ?? '',
+        firstLinkVisible:
+          firstLinkRect.top >= 0 &&
+          firstLinkRect.bottom <= window.innerHeight &&
+          firstLinkRect.height > 0,
+        headerVisible:
+          headerRect.top >= 0 &&
+          headerRect.bottom <= window.innerHeight &&
+          headerRect.height > 0,
+        panelScrollTop: panel.scrollTop,
+      }
+    })
+
+    assert(mobileMenuState, 'Mobile menu structure is incomplete')
+    assert.equal(mobileMenuState.panelScrollTop, 0, 'Mobile menu must open at scrollTop 0')
+    assert.equal(
+      mobileMenuState.firstLinkText,
+      'О компании',
+      'First mobile nav link must remain "О компании"',
+    )
+    assert(mobileMenuState.headerVisible, 'Mobile menu header must be visible on open')
+    assert(mobileMenuState.firstLinkVisible, 'First mobile nav link must be visible on open')
+
     await mobilePage.keyboard.press('Escape')
     await mobileMenu.waitFor({ state: 'hidden' })
   } finally {

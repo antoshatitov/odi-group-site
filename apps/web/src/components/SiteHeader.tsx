@@ -16,24 +16,85 @@ const navLinks = [
 
 const mobileNavPanelId = 'mobile-nav-panel'
 
+type BodyScrollLockStyles = {
+  left: string
+  overflow: string
+  position: string
+  right: string
+  top: string
+  width: string
+}
+
 const SiteHeader = () => {
   const [open, setOpen] = useState(false)
   const mobileNavPanelRef = useRef<HTMLDivElement | null>(null)
   const menuToggleRef = useRef<HTMLButtonElement | null>(null)
+  const lockedScrollYRef = useRef(0)
+  const previousBodyStylesRef = useRef<BodyScrollLockStyles | null>(null)
+  const skipScrollRestoreRef = useRef(false)
   const visibleLinks = SHOW_PROJECTS
     ? navLinks
     : navLinks.filter((link) => link.hash !== '#projects')
 
+  const openMenu = () => {
+    skipScrollRestoreRef.current = false
+    setOpen(true)
+  }
+
+  const closeMenu = ({ restoreScroll = true }: { restoreScroll?: boolean } = {}) => {
+    skipScrollRestoreRef.current = !restoreScroll
+    setOpen(false)
+  }
+
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
+    if (!open) return
+
+    const bodyStyle = document.body.style
+    lockedScrollYRef.current = window.scrollY
+    previousBodyStylesRef.current = {
+      left: bodyStyle.left,
+      overflow: bodyStyle.overflow,
+      position: bodyStyle.position,
+      right: bodyStyle.right,
+      top: bodyStyle.top,
+      width: bodyStyle.width,
+    }
+
+    bodyStyle.position = 'fixed'
+    bodyStyle.top = `-${lockedScrollYRef.current}px`
+    bodyStyle.left = '0'
+    bodyStyle.right = '0'
+    bodyStyle.width = '100%'
+    bodyStyle.overflow = 'hidden'
+
     return () => {
-      document.body.style.overflow = ''
+      const previousBodyStyles = previousBodyStylesRef.current
+      if (previousBodyStyles) {
+        bodyStyle.position = previousBodyStyles.position
+        bodyStyle.top = previousBodyStyles.top
+        bodyStyle.left = previousBodyStyles.left
+        bodyStyle.right = previousBodyStyles.right
+        bodyStyle.width = previousBodyStyles.width
+        bodyStyle.overflow = previousBodyStyles.overflow
+      }
+      previousBodyStylesRef.current = null
+
+      if (!skipScrollRestoreRef.current) {
+        const rootStyle = document.documentElement.style
+        const previousScrollBehavior = rootStyle.scrollBehavior
+        rootStyle.scrollBehavior = 'auto'
+        window.scrollTo(0, lockedScrollYRef.current)
+        rootStyle.scrollBehavior = previousScrollBehavior
+      }
+
+      skipScrollRestoreRef.current = false
     }
   }, [open])
 
   useEffect(() => {
     if (!open) return
     const toggleButton = menuToggleRef.current
+    mobileNavPanelRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
 
     const getFocusableElements = () => {
       if (!mobileNavPanelRef.current) return []
@@ -45,6 +106,9 @@ const SiteHeader = () => {
     }
 
     const focusInitial = () => {
+      if (mobileNavPanelRef.current) {
+        mobileNavPanelRef.current.scrollTop = 0
+      }
       const focusableElements = getFocusableElements()
       const target = focusableElements[0] ?? mobileNavPanelRef.current
       target?.focus()
@@ -52,7 +116,7 @@ const SiteHeader = () => {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setOpen(false)
+        closeMenu()
         return
       }
 
@@ -103,7 +167,7 @@ const SiteHeader = () => {
           role="dialog"
           aria-modal="true"
           aria-label="Мобильное меню"
-          onClick={() => setOpen(false)}
+          onClick={() => closeMenu()}
         >
           <div
             id={mobileNavPanelId}
@@ -113,11 +177,11 @@ const SiteHeader = () => {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mobile-nav-header">
-              <a className="logo" href="/" onClick={() => setOpen(false)}>
+              <a className="logo" href="/" onClick={() => closeMenu()}>
                 <img src="/images/logo.png" alt="ОДИ" width={240} height={70} />
                 <small>строительная компания</small>
               </a>
-              <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+              <Button variant="ghost" size="sm" onClick={() => closeMenu()}>
                 Закрыть
               </Button>
             </div>
@@ -126,7 +190,7 @@ const SiteHeader = () => {
                 <a
                   key={link.hash}
                   href={resolveHomeSectionHref(link.hash)}
-                  onClick={() => setOpen(false)}
+                  onClick={() => closeMenu({ restoreScroll: false })}
                 >
                   {link.label}
                 </a>
@@ -141,7 +205,7 @@ const SiteHeader = () => {
                     cta_location: 'mobile_menu',
                     source_context: 'mobile_menu_phone',
                   })
-                  setOpen(false)
+                  closeMenu()
                 }}
               >
                 +7 924 442-28-00
@@ -156,7 +220,7 @@ const SiteHeader = () => {
                     cta_location: 'mobile_menu',
                     source_context: 'mobile_menu_telegram',
                   })
-                  setOpen(false)
+                  closeMenu()
                 }}
               >
                 Telegram
@@ -164,7 +228,7 @@ const SiteHeader = () => {
               <a
                 className="btn btn-primary"
                 href={resolveHomeSectionHref('#consultation')}
-                onClick={() => setOpen(false)}
+                onClick={() => closeMenu({ restoreScroll: false })}
               >
                 Получить консультацию
               </a>
@@ -225,7 +289,7 @@ const SiteHeader = () => {
               aria-haspopup="dialog"
               aria-expanded={open}
               aria-controls={mobileNavPanelId}
-              onClick={() => setOpen(true)}
+              onClick={openMenu}
             >
               Меню
             </Button>

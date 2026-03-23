@@ -98,6 +98,10 @@
 }
 
 .mobile-nav {
+  --mobile-nav-inset-top: max(var(--space-5), env(safe-area-inset-top));
+  --mobile-nav-inset-right: max(var(--space-5), env(safe-area-inset-right));
+  --mobile-nav-inset-bottom: max(var(--space-5), env(safe-area-inset-bottom));
+  --mobile-nav-inset-left: max(var(--space-5), env(safe-area-inset-left));
   position: fixed;
   inset: 0;
   background: rgba(11, 13, 12, 0.6);
@@ -105,24 +109,23 @@
   display: grid;
   justify-items: center;
   align-items: start;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   padding:
-    max(var(--space-5), env(safe-area-inset-top))
-    max(var(--space-5), env(safe-area-inset-right))
-    max(var(--space-5), env(safe-area-inset-bottom))
-    max(var(--space-5), env(safe-area-inset-left));
+    var(--mobile-nav-inset-top)
+    var(--mobile-nav-inset-right)
+    var(--mobile-nav-inset-bottom)
+    var(--mobile-nav-inset-left);
 }
 
 .mobile-nav-panel {
   background: #f8f6f1;
   border-radius: var(--radius-l);
   width: min(32.5rem, 100%);
-  max-height: calc(100vh - (var(--space-5) * 2));
+  max-height: calc(100vh - var(--mobile-nav-inset-top) - var(--mobile-nav-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  min-height: 0;
   padding: var(--space-6);
   display: flex;
   flex-direction: column;
@@ -132,7 +135,7 @@
 
 @supports (height: 100dvh) {
   .mobile-nav-panel {
-    max-height: calc(100dvh - (var(--space-5) * 2));
+    max-height: calc(100dvh - var(--mobile-nav-inset-top) - var(--mobile-nav-inset-bottom));
   }
 }
 
