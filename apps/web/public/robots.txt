@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://odi-kaliningrad.ru/sitemap.xml
+Sitemap: https://odi-group.ru/sitemap.xml

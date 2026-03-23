@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://odi-kaliningrad.ru/</loc>
+    <loc>https://odi-group.ru/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://odi-kaliningrad.ru/policy</loc>
+    <loc>https://odi-group.ru/policy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://odi-kaliningrad.ru/consent</loc>
+    <loc>https://odi-group.ru/consent</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://odi-kaliningrad.ru/cookies</loc>
+    <loc>https://odi-group.ru/cookies</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
