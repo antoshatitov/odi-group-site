@@ -20,6 +20,7 @@ EXTRA_CHECK_URLS="${EXTRA_CHECK_URLS:-}"
 HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-10}"
 HEALTHCHECK_DELAY="${HEALTHCHECK_DELAY:-1}"
 TEMP_SOURCE_DIR=""
+SOURCE_DIR=""
 
 info() {
   printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -140,7 +141,7 @@ prepare_source_dir() {
     TEMP_SOURCE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/${SITE_SLUG}-deploy-XXXXXX")"
     info "Preparing clean worktree for ${DEPLOY_REF}"
     git -C "${REPO_DIR}" worktree add --force --detach "${TEMP_SOURCE_DIR}" "${target_ref}" >/dev/null
-    printf '%s\n' "${TEMP_SOURCE_DIR}"
+    SOURCE_DIR="${TEMP_SOURCE_DIR}"
     return 0
   fi
 
@@ -155,7 +156,7 @@ prepare_source_dir() {
     exit 1
   fi
 
-  printf '%s\n' "${REPO_DIR}"
+  SOURCE_DIR="${REPO_DIR}"
 }
 
 run_preflight_checks() {
@@ -205,8 +206,6 @@ run_post_deploy_checks() {
 }
 
 main() {
-  local source_dir=""
-
   require_cmd sudo
   require_cmd git
   require_cmd npm
@@ -227,8 +226,8 @@ main() {
   trap cleanup EXIT
   run_preflight_checks
 
-  source_dir="$(prepare_source_dir)"
-  cd "${source_dir}"
+  prepare_source_dir
+  cd "${SOURCE_DIR}"
 
   if [[ "${INSTALL_WORKSPACE_DEPS}" == "true" ]]; then
     info "Installing workspace dependencies"
@@ -244,9 +243,9 @@ main() {
   sudo mkdir -p "${APP_ROOT}/web/dist" "${APP_ROOT}/server"
 
   info "Syncing frontend and backend files"
-  sudo rsync -a --delete "${source_dir}/apps/web/dist/" "${APP_ROOT}/web/dist/"
+  sudo rsync -a --delete "${SOURCE_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
   # Keep server-side secrets that are not stored in git.
-  sudo rsync -a --delete --exclude node_modules --exclude .env "${source_dir}/apps/server/" "${APP_ROOT}/server/"
+  sudo rsync -a --delete --exclude node_modules --exclude .env "${SOURCE_DIR}/apps/server/" "${APP_ROOT}/server/"
 
   if ! sudo test -f "${APP_ROOT}/server/.env"; then
     echo "Missing ${APP_ROOT}/server/.env. Restore environment file before restarting service." >&2
