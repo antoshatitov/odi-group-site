@@ -1,5 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 
+import type {
+  PointerEvent as ReactPointerEvent,
+  WheelEvent as ReactWheelEvent,
+} from 'react'
+
 import Badge from '../components/Badge'
 import Card from '../components/Card'
 import Container from '../components/Container'
@@ -85,6 +90,66 @@ const steps = [
 const mapScriptSrc =
   'https://api-maps.yandex.ru/services/constructor/1.0/js/?um=constructor%3A89b804451933550959e37798984c47c98d8ff6a4a68d360d3953ec8b92dcb7ba&width=100%25&height=100%25&lang=ru_RU&scroll=true'
 
+const galleryAreaPattern = /\d+(?:[,.]\d+)?\s*м(?:²|2)/iu
+const galleryLightboxSizes = '(max-width: 768px) 1200px, 82vw'
+const minGalleryZoom = 1
+const maxGalleryZoom = 4
+const gallerySwipeThreshold = 48
+
+const getGalleryProjectArea = (title: string) => {
+  const [area] = title.match(galleryAreaPattern) ?? []
+  return area ? area.replace(/м2/i, 'м²') : title
+}
+
+const getGalleryProjectLocation = (location: string) => location || 'Калининградская область'
+
+type GalleryZoomState = {
+  scale: number
+  x: number
+  y: number
+}
+
+type GalleryPointerPosition = {
+  x: number
+  y: number
+}
+
+type GalleryGestureState = {
+  mode: 'pan' | 'pinch'
+  startX: number
+  startY: number
+  originX: number
+  originY: number
+  startScale: number
+  startDistance: number
+}
+
+const defaultGalleryZoom: GalleryZoomState = { scale: 1, x: 0, y: 0 }
+
+const clampValue = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+
+const getPointerDistance = (first: GalleryPointerPosition, second: GalleryPointerPosition) =>
+  Math.hypot(first.x - second.x, first.y - second.y)
+
+const getBoundedGalleryZoom = (
+  zoom: GalleryZoomState,
+  container: HTMLElement | null,
+): GalleryZoomState => {
+  const scale = clampValue(zoom.scale, minGalleryZoom, maxGalleryZoom)
+  if (scale <= minGalleryZoom) return defaultGalleryZoom
+  if (!container) return { scale, x: zoom.x, y: zoom.y }
+
+  const rect = container.getBoundingClientRect()
+  const maxX = (rect.width * (scale - 1)) / 2
+  const maxY = (rect.height * (scale - 1)) / 2
+
+  return {
+    scale,
+    x: clampValue(zoom.x, -maxX, maxX),
+    y: clampValue(zoom.y, -maxY, maxY),
+  }
+}
+
 const CostCalculator = lazy(() => import('../components/CostCalculator'))
 
 const Home = () => {
@@ -93,10 +158,15 @@ const Home = () => {
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
+  const [galleryZoom, setGalleryZoom] = useState<GalleryZoomState>(defaultGalleryZoom)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const [isProcessVisible, setIsProcessVisible] = useState(() => !('IntersectionObserver' in window))
   const mapContainerRef = useDeferredMapScript(mapScriptSrc)
   const processTimelineRef = useRef<HTMLDivElement | null>(null)
+  const galleryZoomStageRef = useRef<HTMLDivElement | null>(null)
+  const galleryZoomRef = useRef<GalleryZoomState>(defaultGalleryZoom)
+  const galleryPointersRef = useRef<Map<number, GalleryPointerPosition>>(new Map())
+  const galleryGestureRef = useRef<GalleryGestureState | null>(null)
 
   const { activeGalleryPhoto, handleGalleryPrev, handleGalleryNext } =
     useGalleryModalNavigation(activeGallery, activeGalleryIndex, setActiveGalleryIndex)
@@ -104,6 +174,17 @@ const Home = () => {
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
   }, [])
+
+  useEffect(() => {
+    galleryZoomRef.current = galleryZoom
+  }, [galleryZoom])
+
+  useEffect(() => {
+    galleryPointersRef.current.clear()
+    galleryGestureRef.current = null
+    galleryZoomRef.current = defaultGalleryZoom
+    setGalleryZoom(defaultGalleryZoom)
+  }, [activeGallery?.id, activeGalleryIndex])
 
   useEffect(() => {
     const timeline = processTimelineRef.current
@@ -135,9 +216,206 @@ const Home = () => {
     })
   }, [isCalculatorOpen])
 
-  const openGallery = (item: GalleryItem) => {
+  const openGallery = (item: GalleryItem, photoIndex = 0) => {
+    const lastPhotoIndex = Math.max(item.photos.length - 1, 0)
+    const safePhotoIndex = Math.min(Math.max(photoIndex, 0), lastPhotoIndex)
     setActiveGallery(item)
-    setActiveGalleryIndex(0)
+    setActiveGalleryIndex(safePhotoIndex)
+  }
+
+  const commitGalleryZoom = (
+    nextZoom: GalleryZoomState,
+    container = galleryZoomStageRef.current,
+  ) => {
+    const boundedZoom = getBoundedGalleryZoom(nextZoom, container)
+    galleryZoomRef.current = boundedZoom
+    setGalleryZoom(boundedZoom)
+  }
+
+  const resetGalleryZoom = () => {
+    galleryZoomRef.current = defaultGalleryZoom
+    setGalleryZoom(defaultGalleryZoom)
+  }
+
+  const handleGalleryZoomIn = () => {
+    const currentZoom = galleryZoomRef.current
+    commitGalleryZoom({ ...currentZoom, scale: currentZoom.scale + 0.5 })
+  }
+
+  const handleGalleryZoomOut = () => {
+    const currentZoom = galleryZoomRef.current
+    commitGalleryZoom({ ...currentZoom, scale: currentZoom.scale - 0.5 })
+  }
+
+  const handleGalleryPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!activeGallery) return
+
+    event.currentTarget.setPointerCapture(event.pointerId)
+    galleryPointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    const points = Array.from(galleryPointersRef.current.values())
+    const currentZoom = galleryZoomRef.current
+
+    if (points.length >= 2) {
+      galleryGestureRef.current = {
+        mode: 'pinch',
+        startX: 0,
+        startY: 0,
+        originX: currentZoom.x,
+        originY: currentZoom.y,
+        startScale: currentZoom.scale,
+        startDistance: getPointerDistance(points[0], points[1]),
+      }
+      return
+    }
+
+    galleryGestureRef.current = {
+      mode: 'pan',
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: currentZoom.x,
+      originY: currentZoom.y,
+      startScale: currentZoom.scale,
+      startDistance: 0,
+    }
+  }
+
+  const handleGalleryPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const pointers = galleryPointersRef.current
+    if (!pointers.has(event.pointerId)) return
+
+    pointers.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+
+    const points = Array.from(pointers.values())
+    const gesture = galleryGestureRef.current
+
+    if (points.length >= 2) {
+      event.preventDefault()
+      const distance = getPointerDistance(points[0], points[1])
+      const pinchGesture =
+        gesture?.mode === 'pinch'
+          ? gesture
+          : {
+              mode: 'pinch' as const,
+              startX: 0,
+              startY: 0,
+              originX: galleryZoomRef.current.x,
+              originY: galleryZoomRef.current.y,
+              startScale: galleryZoomRef.current.scale,
+              startDistance: distance,
+            }
+
+      galleryGestureRef.current = pinchGesture
+      const nextScale =
+        pinchGesture.startScale * (distance / Math.max(pinchGesture.startDistance, 1))
+
+      commitGalleryZoom(
+        {
+          scale: nextScale,
+          x: pinchGesture.originX,
+          y: pinchGesture.originY,
+        },
+        event.currentTarget,
+      )
+      return
+    }
+
+    if (!gesture || gesture.mode !== 'pan') return
+
+    const deltaX = event.clientX - gesture.startX
+    const deltaY = event.clientY - gesture.startY
+
+    if (galleryZoomRef.current.scale <= minGalleryZoom) return
+
+    event.preventDefault()
+    commitGalleryZoom(
+      {
+        scale: galleryZoomRef.current.scale,
+        x: gesture.originX + deltaX,
+        y: gesture.originY + deltaY,
+      },
+      event.currentTarget,
+    )
+  }
+
+  const handleGalleryPointerEnd = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    shouldNavigate = true,
+  ) => {
+    const gesture = galleryGestureRef.current
+    const pointers = galleryPointersRef.current
+    pointers.delete(event.pointerId)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    if (shouldNavigate && gesture?.mode === 'pan' && galleryZoomRef.current.scale <= minGalleryZoom) {
+      const deltaX = event.clientX - gesture.startX
+      const deltaY = event.clientY - gesture.startY
+      const isHorizontalSwipe =
+        Math.abs(deltaX) >= gallerySwipeThreshold && Math.abs(deltaX) > Math.abs(deltaY) * 1.25
+
+      if (isHorizontalSwipe) {
+        if (deltaX < 0) {
+          handleGalleryNext()
+        } else {
+          handleGalleryPrev()
+        }
+      }
+    }
+
+    const remainingPoints = Array.from(pointers.values())
+    if (remainingPoints.length >= 2) {
+      galleryGestureRef.current = {
+        mode: 'pinch',
+        startX: 0,
+        startY: 0,
+        originX: galleryZoomRef.current.x,
+        originY: galleryZoomRef.current.y,
+        startScale: galleryZoomRef.current.scale,
+        startDistance: getPointerDistance(remainingPoints[0], remainingPoints[1]),
+      }
+      return
+    }
+
+    if (remainingPoints.length === 1) {
+      const [point] = remainingPoints
+      galleryGestureRef.current = {
+        mode: 'pan',
+        startX: point.x,
+        startY: point.y,
+        originX: galleryZoomRef.current.x,
+        originY: galleryZoomRef.current.y,
+        startScale: galleryZoomRef.current.scale,
+        startDistance: 0,
+      }
+      return
+    }
+
+    galleryGestureRef.current = null
+  }
+
+  const handleGalleryWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const currentZoom = galleryZoomRef.current
+    const zoomStep = event.deltaY > 0 ? -0.25 : 0.25
+    commitGalleryZoom({ ...currentZoom, scale: currentZoom.scale + zoomStep }, event.currentTarget)
+  }
+
+  const handleGalleryDoubleClick = () => {
+    if (galleryZoomRef.current.scale > minGalleryZoom) {
+      resetGalleryZoom()
+      return
+    }
+
+    commitGalleryZoom({ scale: 2, x: 0, y: 0 })
   }
 
   const handleFiltersChange = (nextFilters: typeof filters) => {
@@ -394,90 +672,78 @@ const Home = () => {
 
       <Modal
         isOpen={Boolean(activeGallery)}
-        title={activeGallery?.title ?? ''}
+        title="Просмотр фотографий объекта"
         onClose={() => setActiveGallery(null)}
-        side={
-          activeGallery ? (
-            <div className="gallery-modal-side">
-              <span className="gallery-location">{activeGallery.location}</span>
-              <p className="muted">{activeGallery.description}</p>
-              <div className="gallery-thumbs">
-                {activeGallery.photos.map((image, index) => (
-                  <button
-                    key={image.full.jpg.src}
-                    className="gallery-thumb"
-                    type="button"
-                    onClick={() => setActiveGalleryIndex(index)}
-                    data-active={index === activeGalleryIndex}
-                    aria-label={`Показать фото ${index + 1}`}
-                  >
-                    <picture>
-                      {buildResponsiveSrcSet(image.thumb.avif, image.cover.avif) ? (
-                        <source
-                          type="image/avif"
-                          srcSet={buildResponsiveSrcSet(image.thumb.avif, image.cover.avif)}
-                          sizes="(max-width: 768px) 28vw, 96px"
-                        />
-                      ) : null}
-                      <source
-                        type="image/webp"
-                        srcSet={buildResponsiveSrcSet(image.thumb.webp, image.cover.webp)}
-                        sizes="(max-width: 768px) 28vw, 96px"
-                      />
-                      <img
-                        src={image.thumb.jpg.src}
-                        srcSet={buildResponsiveSrcSet(image.thumb.jpg, image.cover.jpg)}
-                        sizes="(max-width: 768px) 28vw, 96px"
-                        alt={image.alt}
-                        width={image.thumb.jpg.width}
-                        height={image.thumb.jpg.height}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </picture>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : undefined
-        }
+        variant="lightbox"
+        showTitle={false}
       >
         {activeGallery && activeGalleryPhoto && (
-          <div className="gallery-modal">
-            <div className="gallery-main">
-              <picture>
-                {buildResponsiveSrcSet(activeGalleryPhoto.cover.avif, activeGalleryPhoto.full.avif) ? (
+          <div className="gallery-modal gallery-modal-lightbox">
+            <div className="gallery-lightbox-meta">
+              <div>
+                <span>Площадь</span>
+                <strong>{getGalleryProjectArea(activeGallery.title)}</strong>
+              </div>
+              <div>
+                <span>Локация</span>
+                <strong>{getGalleryProjectLocation(activeGallery.location)}</strong>
+              </div>
+            </div>
+            <div className="gallery-main gallery-lightbox-main">
+              <div
+                className="gallery-zoom-stage"
+                ref={galleryZoomStageRef}
+                data-zoomed={galleryZoom.scale > minGalleryZoom}
+                onPointerDown={handleGalleryPointerDown}
+                onPointerMove={handleGalleryPointerMove}
+                onPointerUp={handleGalleryPointerEnd}
+                onPointerCancel={(event) => handleGalleryPointerEnd(event, false)}
+                onWheel={handleGalleryWheel}
+                onDoubleClick={handleGalleryDoubleClick}
+              >
+                <picture
+                  className="gallery-zoom-picture"
+                  style={{
+                    transform: `translate3d(${galleryZoom.x}px, ${galleryZoom.y}px, 0) scale(${galleryZoom.scale})`,
+                  }}
+                >
+                  {buildResponsiveSrcSet(
+                    activeGalleryPhoto.cover.avif,
+                    activeGalleryPhoto.full.avif,
+                  ) ? (
+                    <source
+                      type="image/avif"
+                      srcSet={buildResponsiveSrcSet(
+                        activeGalleryPhoto.cover.avif,
+                        activeGalleryPhoto.full.avif,
+                      )}
+                      sizes={galleryLightboxSizes}
+                    />
+                  ) : null}
                   <source
-                    type="image/avif"
+                    type="image/webp"
                     srcSet={buildResponsiveSrcSet(
-                      activeGalleryPhoto.cover.avif,
-                      activeGalleryPhoto.full.avif,
+                      activeGalleryPhoto.cover.webp,
+                      activeGalleryPhoto.full.webp,
                     )}
-                    sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
+                    sizes={galleryLightboxSizes}
                   />
-                ) : null}
-                <source
-                  type="image/webp"
-                  srcSet={buildResponsiveSrcSet(
-                    activeGalleryPhoto.cover.webp,
-                    activeGalleryPhoto.full.webp,
-                  )}
-                  sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
-                />
-                <img
-                  src={activeGalleryPhoto.full.jpg.src}
-                  srcSet={buildResponsiveSrcSet(
-                    activeGalleryPhoto.cover.jpg,
-                    activeGalleryPhoto.full.jpg,
-                  )}
-                  sizes="(max-width: 768px) calc(100vw - 3rem), 34rem"
-                  alt={activeGalleryPhoto.alt}
-                  width={activeGalleryPhoto.full.jpg.width}
-                  height={activeGalleryPhoto.full.jpg.height}
-                  loading="eager"
-                  decoding="async"
-                />
-              </picture>
+                  <img
+                    src={activeGalleryPhoto.full.jpg.src}
+                    srcSet={buildResponsiveSrcSet(
+                      activeGalleryPhoto.cover.jpg,
+                      activeGalleryPhoto.full.jpg,
+                    )}
+                    sizes={galleryLightboxSizes}
+                    alt={activeGalleryPhoto.alt}
+                    width={activeGalleryPhoto.full.jpg.width}
+                    height={activeGalleryPhoto.full.jpg.height}
+                    loading="eager"
+                    decoding="async"
+                    draggable={false}
+                  />
+                </picture>
+              </div>
               <button
                 className="gallery-nav gallery-nav-prev"
                 type="button"
@@ -494,9 +760,75 @@ const Home = () => {
               >
                 ›
               </button>
+              <div className="gallery-zoom-controls" aria-label="Масштаб изображения">
+                <button
+                  className="gallery-zoom-button"
+                  type="button"
+                  onClick={handleGalleryZoomOut}
+                  disabled={galleryZoom.scale <= minGalleryZoom}
+                  aria-label="Уменьшить изображение"
+                >
+                  −
+                </button>
+                <button
+                  className="gallery-zoom-button"
+                  type="button"
+                  onClick={resetGalleryZoom}
+                  disabled={galleryZoom.scale <= minGalleryZoom}
+                  aria-label="Сбросить масштаб"
+                >
+                  1×
+                </button>
+                <button
+                  className="gallery-zoom-button"
+                  type="button"
+                  onClick={handleGalleryZoomIn}
+                  disabled={galleryZoom.scale >= maxGalleryZoom}
+                  aria-label="Увеличить изображение"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div className="gallery-counter">
               {activeGalleryIndex + 1} / {activeGallery.photos.length}
+            </div>
+            <div className="gallery-thumbs gallery-lightbox-thumbs">
+              {activeGallery.photos.map((image, index) => (
+                <button
+                  key={image.full.jpg.src}
+                  className="gallery-thumb"
+                  type="button"
+                  onClick={() => setActiveGalleryIndex(index)}
+                  data-active={index === activeGalleryIndex}
+                  aria-label={`Показать фото ${index + 1}`}
+                >
+                  <picture>
+                    {buildResponsiveSrcSet(image.thumb.avif, image.cover.avif) ? (
+                      <source
+                        type="image/avif"
+                        srcSet={buildResponsiveSrcSet(image.thumb.avif, image.cover.avif)}
+                        sizes="7rem"
+                      />
+                    ) : null}
+                    <source
+                      type="image/webp"
+                      srcSet={buildResponsiveSrcSet(image.thumb.webp, image.cover.webp)}
+                      sizes="7rem"
+                    />
+                    <img
+                      src={image.thumb.jpg.src}
+                      srcSet={buildResponsiveSrcSet(image.thumb.jpg, image.cover.jpg)}
+                      sizes="7rem"
+                      alt={image.alt}
+                      width={image.thumb.jpg.width}
+                      height={image.thumb.jpg.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
+                </button>
+              ))}
             </div>
           </div>
         )}

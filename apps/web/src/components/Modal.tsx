@@ -8,9 +8,19 @@ type ModalProps = {
   onClose: () => void
   children: ReactNode
   side?: ReactNode
+  variant?: 'default' | 'lightbox'
+  showTitle?: boolean
 }
 
-const Modal = ({ isOpen, title, onClose, children, side }: ModalProps) => {
+const Modal = ({
+  isOpen,
+  title,
+  onClose,
+  children,
+  side,
+  variant = 'default',
+  showTitle = true,
+}: ModalProps) => {
   const modalRef = useRef<HTMLDivElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -78,6 +88,9 @@ const Modal = ({ isOpen, title, onClose, children, side }: ModalProps) => {
   }, [isOpen, onClose])
 
   if (!isOpen) return null
+  const modalClassName = `modal ${variant === 'lightbox' ? 'modal-lightbox' : ''}`.trim()
+  const modalBodyClassName =
+    `modal-body ${variant === 'lightbox' ? 'modal-body-lightbox' : ''}`.trim()
 
   return (
     <div
@@ -87,8 +100,8 @@ const Modal = ({ isOpen, title, onClose, children, side }: ModalProps) => {
       aria-label={title}
       onClick={onClose}
     >
-      <div className="modal" onClick={(event) => event.stopPropagation()} ref={modalRef}>
-        <div className="modal-body">
+      <div className={modalClassName} onClick={(event) => event.stopPropagation()} ref={modalRef}>
+        <div className={modalBodyClassName}>
           <button
             className="modal-close"
             type="button"
@@ -99,7 +112,7 @@ const Modal = ({ isOpen, title, onClose, children, side }: ModalProps) => {
             ✕
           </button>
           <div className="stack">
-            <h2 className="h2">{title}</h2>
+            {showTitle ? <h2 className="h2">{title}</h2> : null}
             {children}
           </div>
         </div>

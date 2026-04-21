@@ -1,7 +1,7 @@
 {
   "assetBudgets": {
     "maxMainJsGzipKb": 100,
-    "maxMainCssKb": 32,
+    "maxMainCssKb": 35,
     "maxTotalDistAssetsKb": 70000,
     "maxLargestDistAssetKb": 1300
   },

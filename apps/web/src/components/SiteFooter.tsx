@@ -5,7 +5,16 @@ const SiteFooter = () => {
     <footer className="site-footer">
       <div className="container footer-grid">
         <div className="stack">
-          <div className="logo">ОДИ</div>
+          <div className="footer-logo">
+            <img
+              src="/images/logo_bg_white.png"
+              alt="ОДИ"
+              width={240}
+              height={70}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           <p className="muted">
             Строительство индивидуальных домов в Калининграде и области. Проектируем,
             строим, контролируем качество и сроки.
@@ -35,8 +44,12 @@ const SiteFooter = () => {
         </div>
       </div>
       <div className="container footer-bottom">
-        <span className="muted">© 2026 «ОДИ». Все права защищены.</span>
-        <span className="muted">ИНН / ОГРН: по запросу</span>
+        <span className="muted">© 2026 ООО «ОДИГРУПП». Все права защищены.</span>
+        <span className="muted">
+          ИНН: 2016007291
+          <br />
+          ОГРН: 1232000006754
+        </span>
       </div>
     </footer>
   )
