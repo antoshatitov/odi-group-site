@@ -181,27 +181,41 @@ const imagesByFolder = Object.entries(optimizedImageModules).reduce<Record<strin
   {},
 )
 
-export const galleryItems: GalleryItem[] = Object.entries(descriptionModules)
-  .filter(([path]) => isDescriptionFile(path))
-  .map(([path, raw], index) => {
-    const folder = getFolderName(path)
-    const { title, location, description } = parseDescription(raw)
-    const safeTitle = title || folder || `Проект ${index + 1}`
-    const records = sortRecords(imagesByFolder[folder] ?? [])
-    const photos = records.map((record, photoIndex) => toGalleryAsset(safeTitle, record, photoIndex))
-    if (photos.length === 0) return null
+const movePriorityGalleryItems = (items: GalleryItem[]) => {
+  if (items.length < 4) return items
 
-    const coverIndex = getCoverIndex(safeTitle, records)
-    const coverImage = photos[coverIndex] ?? photos[0]
+  const fourthItem = items[3]
+  const thirdItem = items[2]
+  const restItems = items.filter((_, index) => index !== 2 && index !== 3)
 
-    return {
-      id: folder || `builded-${index + 1}`,
-      title: safeTitle,
-      location,
-      description,
-      cover: coverImage,
-      photos,
-    }
-  })
-  .filter((item): item is GalleryItem => item !== null)
-  .sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+  return [fourthItem, thirdItem, ...restItems]
+}
+
+export const galleryItems: GalleryItem[] = movePriorityGalleryItems(
+  Object.entries(descriptionModules)
+    .filter(([path]) => isDescriptionFile(path))
+    .map(([path, raw], index) => {
+      const folder = getFolderName(path)
+      const { title, location, description } = parseDescription(raw)
+      const safeTitle = title || folder || `Проект ${index + 1}`
+      const records = sortRecords(imagesByFolder[folder] ?? [])
+      const photos = records.map((record, photoIndex) =>
+        toGalleryAsset(safeTitle, record, photoIndex),
+      )
+      if (photos.length === 0) return null
+
+      const coverIndex = getCoverIndex(safeTitle, records)
+      const coverImage = photos[coverIndex] ?? photos[0]
+
+      return {
+        id: folder || `builded-${index + 1}`,
+        title: safeTitle,
+        location,
+        description,
+        cover: coverImage,
+        photos,
+      }
+    })
+    .filter((item): item is GalleryItem => item !== null)
+    .sort((a, b) => a.title.localeCompare(b.title, 'ru')),
+)

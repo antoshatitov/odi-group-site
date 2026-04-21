@@ -26,6 +26,20 @@ const LegalPage = ({ title, updated, children }: LegalPageProps) => {
             <div className="divider" />
             <div className="stack" style={{ gap: 'var(--space-4)' }}>
               {children}
+              <div className="stack">
+                <strong>Реквизиты компании</strong>
+                <p>
+                  ООО «ОДИГРУПП»
+                  <br />
+                  ОГРН: 1232000006754
+                  <br />
+                  ИНН: 2016007291
+                  <br />
+                  Дата регистрации: 09.08.2023
+                  <br />
+                  КПП: 201601001
+                </p>
+              </div>
             </div>
           </div>
         </Card>

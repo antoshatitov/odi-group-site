@@ -366,10 +366,24 @@
   box-shadow: var(--shadow-strong);
 }
 
+.modal-lightbox {
+  width: min(1180px, 100%);
+  height: min(92vh, calc(100vh - (var(--space-5) * 2)));
+  max-height: 92vh;
+  grid-template-columns: minmax(0, 1fr);
+  background: #111715;
+  color: #f8f6f1;
+}
+
 @supports (height: 100dvh) {
   .modal {
     height: min(88dvh, calc(100dvh - (var(--space-5) * 2)));
     max-height: 88dvh;
+  }
+
+  .modal-lightbox {
+    height: min(92dvh, calc(100dvh - (var(--space-5) * 2)));
+    max-height: 92dvh;
   }
 }
 
@@ -390,6 +404,18 @@
   gap: var(--space-4);
 }
 
+.modal-body-lightbox {
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-5);
+}
+
+.modal-body-lightbox > .stack {
+  height: 100%;
+  min-height: 0;
+  gap: var(--space-3);
+}
+
 .modal-close {
   align-self: flex-end;
   font-size: var(--text-lg);
@@ -400,6 +426,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.modal-lightbox .modal-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 3;
+  color: #f8f6f1;
+  background: rgba(11, 13, 12, 0.58);
+  backdrop-filter: blur(8px);
 }
 
 .pill {
@@ -414,7 +450,7 @@
 }
 
 .section {
-  padding: var(--space-9) 0;
+  padding: var(--space-7) 0;
   position: relative;
   content-visibility: auto;
   contain-intrinsic-size: 1px 900px;
@@ -449,6 +485,19 @@
   .modal-side {
     border-top: 1px solid rgba(18, 25, 23, 0.08);
   }
+
+  .modal-lightbox {
+    height: min(94vh, calc(100vh - (var(--space-4) * 2)));
+    max-height: 94vh;
+    overflow: hidden;
+  }
+
+  .modal-body-lightbox {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: var(--space-3);
+  }
 }
 
 @supports (height: 100dvh) {
@@ -456,6 +505,11 @@
     .modal {
       height: min(92dvh, calc(100dvh - (var(--space-5) * 2)));
       max-height: 92dvh;
+    }
+
+    .modal-lightbox {
+      height: min(94dvh, calc(100dvh - (var(--space-4) * 2)));
+      max-height: 94dvh;
     }
   }
 }
@@ -480,6 +534,6 @@
   }
 
   .section {
-    padding: var(--space-8) 0;
+    padding: var(--space-6) 0;
   }
 }
