@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import type { CSSProperties } from 'react'
 
 import Container from '../components/Container'
 import Section from '../components/Section'
@@ -15,7 +15,6 @@ type GallerySectionProps = {
 type GalleryPictureProps = {
   image: GalleryImageAsset
   sizes: string
-  mode: 'feature' | 'support'
   loading?: 'eager' | 'lazy'
 }
 
@@ -33,19 +32,9 @@ const getPhotoIndex = (item: GalleryItem, image: GalleryImageAsset) => {
   return index >= 0 ? index : 0
 }
 
-const getImageVariantPair = (
-  image: GalleryImageAsset,
-  mode: GalleryPictureProps['mode'],
-): [ResponsiveImageVariant, ResponsiveImageVariant] => {
-  if (mode === 'feature') {
-    return [image.cover, image.full]
-  }
-
-  return [image.thumb, image.cover]
-}
-
-const GalleryPicture = ({ image, sizes, mode, loading = 'lazy' }: GalleryPictureProps) => {
-  const [small, large] = getImageVariantPair(image, mode)
+const GalleryPicture = ({ image, sizes, loading = 'lazy' }: GalleryPictureProps) => {
+  const imageVariants: [ResponsiveImageVariant, ResponsiveImageVariant] = [image.cover, image.full]
+  const [small, large] = imageVariants
   const avifSrcSet = buildResponsiveSrcSet(small.avif, large.avif)
 
   return (
@@ -76,131 +65,75 @@ const GallerySection = ({
   loadError = null,
   onOpenGallery,
 }: GallerySectionProps) => {
-  const [activeIndex, setActiveIndex] = useState(0)
   const showSkeleton = isLoading && items.length === 0
   const showError = Boolean(loadError) && !isLoading && items.length === 0
   const showEmpty = !isLoading && !showError && items.length === 0
-  const safeActiveIndex = items.length ? Math.min(activeIndex, items.length - 1) : 0
-  const activeItem = items[safeActiveIndex]
-  const hasMultipleItems = items.length > 1
-  const projectArea = activeItem ? getProjectArea(activeItem.title) : ''
-  const projectLocation = activeItem ? getProjectLocation(activeItem.location) : ''
-  const featurePhoto = activeItem?.cover ?? activeItem?.photos[0]
-  const featurePhotoIndex = activeItem && featurePhoto ? getPhotoIndex(activeItem, featurePhoto) : 0
-
-  const handlePreviousProject = () => {
-    if (!items.length) return
-    setActiveIndex((currentIndex) => {
-      const normalizedIndex = Math.min(currentIndex, items.length - 1)
-      return (normalizedIndex - 1 + items.length) % items.length
-    })
-  }
-
-  const handleNextProject = () => {
-    if (!items.length) return
-    setActiveIndex((currentIndex) => {
-      const normalizedIndex = Math.min(currentIndex, items.length - 1)
-      return (normalizedIndex + 1) % items.length
-    })
-  }
 
   return (
     <Section id="gallery" tone="toned">
       <Container size="wide">
         <div className="stack" style={{ gap: 'var(--space-6)' }}>
-          <div className="gallery-carousel-heading">
+          <div className="gallery-grid-heading">
             <div className="stack">
               <span className="eyebrow">Построено нами</span>
-              <h2 className="h2">Реализованные объекты в Калининградской области</h2>
+              <h2 className="h2">Реализованные проекты</h2>
             </div>
-            {hasMultipleItems ? (
-              <div className="gallery-carousel-controls" aria-label="Навигация по объектам">
-                <button
-                  className="gallery-carousel-arrow"
-                  type="button"
-                  onClick={handlePreviousProject}
-                  aria-label="Предыдущий объект"
-                >
-                  ←
-                </button>
-                <span className="gallery-carousel-count" aria-live="polite">
-                  {safeActiveIndex + 1} / {items.length}
-                </span>
-                <button
-                  className="gallery-carousel-arrow"
-                  type="button"
-                  onClick={handleNextProject}
-                  aria-label="Следующий объект"
-                >
-                  →
-                </button>
-              </div>
-            ) : null}
+            <p className="gallery-grid-intro">
+              Дома, которые уже стоят на своих участках: площадь, место и фотографии без лишней
+              витрины.
+            </p>
           </div>
 
-          {activeItem && featurePhoto ? (
-            <div
-              className="gallery-carousel"
-              aria-roledescription="carousel"
-              aria-label="Карусель построенных объектов"
-            >
-              <article className="gallery-carousel-card" key={activeItem.id}>
-                <div className="gallery-showcase gallery-showcase-single">
-                  <button
-                    className="gallery-feature-photo"
-                    type="button"
-                    onClick={() => onOpenGallery(activeItem, featurePhotoIndex)}
-                    aria-label={`Открыть фотографии объекта ${activeItem.title}`}
+          {items.length > 0 ? (
+            <div className="built-gallery-grid" aria-label="Галерея построенных объектов">
+              {items.map((item, index) => {
+                const coverPhoto = item.cover ?? item.photos[0]
+                if (!coverPhoto) return null
+
+                return (
+                  <article
+                    className="built-gallery-card"
+                    key={item.id}
+                    style={{ '--gallery-index': index } as CSSProperties}
                   >
-                    <GalleryPicture
-                      image={featurePhoto}
-                      mode="feature"
-                      loading="eager"
-                      sizes="(max-width: 1024px) calc(100vw - 2.4rem), min(100vw - 5rem, 1220px)"
-                    />
-                  </button>
-                </div>
-                <div className="gallery-project-panel">
-                  <div className="gallery-project-meta">
-                    <div>
-                      <span>Площадь</span>
-                      <strong>{projectArea}</strong>
-                    </div>
-                    <div>
-                      <span>Локация</span>
-                      <strong>{projectLocation}</strong>
-                    </div>
-                  </div>
-                </div>
-              </article>
-              {hasMultipleItems ? (
-                <div className="gallery-carousel-dots" aria-label="Выбрать объект">
-                  {items.map((item, index) => (
                     <button
-                      key={item.id}
-                      className="gallery-carousel-dot"
+                      className="built-gallery-link"
                       type="button"
-                      aria-label={`Показать объект ${getProjectArea(item.title)}, ${getProjectLocation(
-                        item.location,
-                      )}`}
-                      aria-current={index === safeActiveIndex ? 'true' : undefined}
-                      data-active={index === safeActiveIndex}
-                      onClick={() => setActiveIndex(index)}
-                    />
-                  ))}
-                </div>
-              ) : null}
+                      onClick={() => onOpenGallery(item, getPhotoIndex(item, coverPhoto))}
+                      aria-label={`Открыть фотографии объекта ${item.title}`}
+                    >
+                      <GalleryPicture
+                        image={coverPhoto}
+                        loading={index < 2 ? 'eager' : 'lazy'}
+                        sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) calc((100vw - 4rem) / 2), min(34vw, 520px)"
+                      />
+                      <span className="built-gallery-caption">
+                        <strong>{getProjectArea(item.title)}</strong>
+                        <span>{getProjectLocation(item.location)}</span>
+                      </span>
+                    </button>
+                  </article>
+                )
+              })}
             </div>
           ) : null}
 
           {showSkeleton ? (
-            <div className="gallery-carousel gallery-carousel-loading" aria-hidden="true">
-              <div className="gallery-carousel-card">
-                <div className="gallery-showcase gallery-showcase-single">
-                  <div className="gallery-feature-photo gallery-skeleton" />
-                </div>
-                <div className="gallery-project-panel gallery-skeleton-panel" />
-              </div>
+            <div className="built-gallery-grid built-gallery-grid-loading" aria-hidden="true">
+              {Array.from({ length: 6 }, (_, index) => (
+                <article
+                  className="built-gallery-card"
+                  key={index}
+                  style={{ '--gallery-index': index } as CSSProperties}
+                >
+                  <div className="built-gallery-link gallery-skeleton">
+                    <div className="built-gallery-caption built-gallery-caption-skeleton">
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           ) : null}
 
