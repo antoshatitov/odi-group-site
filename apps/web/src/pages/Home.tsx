@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 
 import type {
+  MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
 } from 'react'
@@ -125,6 +126,7 @@ type GalleryGestureState = {
 }
 
 const defaultGalleryZoom: GalleryZoomState = { scale: 1, x: 0, y: 0 }
+const galleryClickMoveThreshold = 8
 
 const clampValue = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -160,16 +162,22 @@ const Home = () => {
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [galleryZoom, setGalleryZoom] = useState<GalleryZoomState>(defaultGalleryZoom)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
-  const [isProcessVisible, setIsProcessVisible] = useState(() => !('IntersectionObserver' in window))
+  const [isProcessVisible, setIsProcessVisible] = useState(
+    () => !('IntersectionObserver' in window),
+  )
   const mapContainerRef = useDeferredMapScript(mapScriptSrc)
   const processTimelineRef = useRef<HTMLDivElement | null>(null)
   const galleryZoomStageRef = useRef<HTMLDivElement | null>(null)
   const galleryZoomRef = useRef<GalleryZoomState>(defaultGalleryZoom)
   const galleryPointersRef = useRef<Map<number, GalleryPointerPosition>>(new Map())
   const galleryGestureRef = useRef<GalleryGestureState | null>(null)
+  const galleryClickRef = useRef({ startX: 0, startY: 0, moved: false })
 
-  const { activeGalleryPhoto, handleGalleryPrev, handleGalleryNext } =
-    useGalleryModalNavigation(activeGallery, activeGalleryIndex, setActiveGalleryIndex)
+  const { activeGalleryPhoto, handleGalleryPrev, handleGalleryNext } = useGalleryModalNavigation(
+    activeGallery,
+    activeGalleryIndex,
+    setActiveGalleryIndex,
+  )
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
@@ -255,6 +263,7 @@ const Home = () => {
       x: event.clientX,
       y: event.clientY,
     })
+    galleryClickRef.current = { startX: event.clientX, startY: event.clientY, moved: false }
 
     const points = Array.from(galleryPointersRef.current.values())
     const currentZoom = galleryZoomRef.current
@@ -294,6 +303,14 @@ const Home = () => {
 
     const points = Array.from(pointers.values())
     const gesture = galleryGestureRef.current
+    const clickState = galleryClickRef.current
+    if (
+      !clickState.moved &&
+      Math.hypot(event.clientX - clickState.startX, event.clientY - clickState.startY) >
+        galleryClickMoveThreshold
+    ) {
+      clickState.moved = true
+    }
 
     if (points.length >= 2) {
       event.preventDefault()
@@ -356,7 +373,20 @@ const Home = () => {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
 
-    if (shouldNavigate && gesture?.mode === 'pan' && galleryZoomRef.current.scale <= minGalleryZoom) {
+    const clickState = galleryClickRef.current
+    if (
+      !clickState.moved &&
+      Math.hypot(event.clientX - clickState.startX, event.clientY - clickState.startY) >
+        galleryClickMoveThreshold
+    ) {
+      clickState.moved = true
+    }
+
+    if (
+      shouldNavigate &&
+      gesture?.mode === 'pan' &&
+      galleryZoomRef.current.scale <= minGalleryZoom
+    ) {
       const deltaX = event.clientX - gesture.startX
       const deltaY = event.clientY - gesture.startY
       const isHorizontalSwipe =
@@ -409,13 +439,27 @@ const Home = () => {
     commitGalleryZoom({ ...currentZoom, scale: currentZoom.scale + zoomStep }, event.currentTarget)
   }
 
-  const handleGalleryDoubleClick = () => {
+  const handleGalleryStageClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (galleryClickRef.current.moved) return
+
     if (galleryZoomRef.current.scale > minGalleryZoom) {
       resetGalleryZoom()
       return
     }
 
-    commitGalleryZoom({ scale: 2, x: 0, y: 0 })
+    const rect = event.currentTarget.getBoundingClientRect()
+    const clickX = event.clientX - rect.left
+    const clickY = event.clientY - rect.top
+    const nextScale = 2
+
+    commitGalleryZoom(
+      {
+        scale: nextScale,
+        x: (rect.width / 2 - clickX) * (nextScale - 1),
+        y: (rect.height / 2 - clickY) * (nextScale - 1),
+      },
+      event.currentTarget,
+    )
   }
 
   const handleFiltersChange = (nextFilters: typeof filters) => {
@@ -699,7 +743,7 @@ const Home = () => {
                 onPointerUp={handleGalleryPointerEnd}
                 onPointerCancel={(event) => handleGalleryPointerEnd(event, false)}
                 onWheel={handleGalleryWheel}
-                onDoubleClick={handleGalleryDoubleClick}
+                onClick={handleGalleryStageClick}
               >
                 <picture
                   className="gallery-zoom-picture"
