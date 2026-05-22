@@ -103,13 +103,11 @@ const runSmokeChecks = async (url) => {
       }
     }
 
-    await desktopPage.getByRole('button', { name: 'Расчет стоимости' }).first().click()
-    const calculatorModal = desktopPage.getByRole('dialog', {
-      name: 'Расчет стоимости строительства',
-    })
-    await calculatorModal.waitFor({ state: 'visible' })
-    await desktopPage.keyboard.press('Escape')
-    await calculatorModal.waitFor({ state: 'hidden' })
+    assert.equal(
+      await desktopPage.getByRole('button', { name: 'Расчет стоимости' }).count(),
+      0,
+      'Calculator CTA must stay hidden while calculator access is paused',
+    )
 
     const mobilePage = await browser.newPage({
       viewport: { width: 390, height: 844 },

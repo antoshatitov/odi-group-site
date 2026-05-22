@@ -468,7 +468,7 @@ const Home = () => {
 
   return (
     <>
-      <HeroSection onOpenCalculator={() => setIsCalculatorOpen(true)} />
+      <HeroSection />
 
       <GallerySection
         items={galleryItems}

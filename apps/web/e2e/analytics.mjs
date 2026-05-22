@@ -20,7 +20,6 @@ const previewArgs = ['run', 'preview', '--', '--host', '127.0.0.1', '--port', St
 const requiredGoals = [
   'hero_cta_telegram_click',
   'hero_cta_call_click',
-  'hero_cta_calculator_click',
   'header_phone_click',
   'header_consultation_click',
   'mobile_menu_call_click',
@@ -29,8 +28,6 @@ const requiredGoals = [
   'contacts_telegram_click',
   'footer_phone_click',
   'lead_form_success',
-  'calculator_open',
-  'calculator_success',
 ]
 const requiredGoalPayloadKeys = [
   'page_path',
@@ -272,6 +269,7 @@ const runAnalyticsChecks = async (url) => {
     })
     await page.waitForSelector('#main-content')
 
+    await page.locator('.hero button', { hasText: 'Написать' }).first().click()
     await page.locator('.hero a[href^="https://t.me/"]').first().click()
     await waitForGoalCount(page, 'hero_cta_telegram_click')
 
@@ -302,29 +300,13 @@ const runAnalyticsChecks = async (url) => {
     ])
     await waitForGoalCount(page, 'lead_form_success')
 
-    await page.locator('.hero button:has-text("Расчет стоимости")').first().click()
-    await waitForGoalCount(page, 'hero_cta_calculator_click')
-    await waitForGoalCount(page, 'calculator_open')
-
-    const calculatorDialog = page.getByRole('dialog', { name: 'Расчет стоимости строительства' })
-    await calculatorDialog.waitFor({ state: 'visible' })
-
-    const calculatorForm = calculatorDialog.locator('form').first()
-    await calculatorForm.getByLabel('Количество этажей').selectOption('1')
-    await calculatorForm.getByLabel('Площадь дома').fill('120')
-    await calculatorForm.getByRole('radio', { name: 'Черный ключ' }).check()
-    await calculatorForm.getByLabel('Имя и фамилия').fill('Тестовый Пользователь')
-    await calculatorForm.getByLabel('Телефон').fill('+7 924 442-28-00')
-    await calculatorForm.getByRole('checkbox').check()
-    await Promise.all([
-      page.waitForResponse(
-        (response) => response.url().includes('/api/cost-estimate') && response.status() === 200,
-      ),
-      calculatorForm.getByRole('button', { name: 'Расчет стоимости' }).click(),
-    ])
-    await waitForGoalCount(page, 'calculator_success')
-    await calculatorDialog.getByRole('button', { name: 'Закрыть модальное окно' }).click()
-    await calculatorDialog.waitFor({ state: 'hidden' })
+    const heroCalculatorButtonCount = await page
+      .locator('.hero button:has-text("Расчет стоимости")')
+      .count()
+    assert(
+      heroCalculatorButtonCount === 0,
+      `Hero calculator CTA must stay hidden while calculator access is paused, got ${heroCalculatorButtonCount}`,
+    )
 
     await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('button', { name: 'Меню' }).waitFor()
@@ -358,10 +340,9 @@ const runAnalyticsChecks = async (url) => {
     assert(requests.lead.length === 1, `Expected 1 /api/lead call, got ${requests.lead.length}`)
     assertRequestPayload(requests.lead[0], '/api/lead')
     assert(
-      requests.costEstimate.length === 1,
-      `Expected 1 /api/cost-estimate call, got ${requests.costEstimate.length}`,
+      requests.costEstimate.length === 0,
+      `Expected no /api/cost-estimate calls while calculator access is hidden, got ${requests.costEstimate.length}`,
     )
-    assertRequestPayload(requests.costEstimate[0], '/api/cost-estimate')
 
     await context.close()
   } finally {
