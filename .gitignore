@@ -40,5 +40,9 @@ skills-lock.json
 docs/*
 !docs/
 !docs/*.md
+!docs/plans/
+!docs/plans/*.md
+!docs/plans/completed/
+!docs/plans/completed/*.md
 docs/plan.md
 docs/work/

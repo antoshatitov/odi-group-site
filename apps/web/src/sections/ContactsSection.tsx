@@ -2,8 +2,10 @@ import type { RefObject } from 'react'
 
 import Badge from '../components/Badge'
 import Card from '../components/Card'
+import ContactIcon from '../components/ContactIcon'
 import Container from '../components/Container'
 import Section from '../components/Section'
+import { messengerChannels } from '../data/contactChannels'
 import { trackGoal } from '../utils/analytics'
 
 type ContactsSectionProps = {
@@ -43,21 +45,29 @@ const ContactsSection = ({ mapContainerRef }: ContactsSectionProps) => {
               </div>
               <div>
                 <strong>Мессенджеры</strong>
-                <div className="hero-actions">
-                  <a
-                    className="btn btn-outline btn-sm"
-                    href="https://t.me/o781781"
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() =>
-                      trackGoal('contacts_telegram_click', {
-                        cta_location: 'contacts',
-                        source_context: 'contacts_telegram',
-                      })
-                    }
-                  >
-                    Telegram
-                  </a>
+                <div className="contact-channel-grid" aria-label="Мессенджеры ОДИ">
+                  {messengerChannels.map((channel) => {
+                    const goalKey = channel.label.toLowerCase()
+
+                    return (
+                      <a
+                        className="contact-channel-link"
+                        href={channel.href}
+                        key={channel.label}
+                        target={channel.isExternal ? '_blank' : undefined}
+                        rel={channel.isExternal ? 'noreferrer' : undefined}
+                        onClick={() =>
+                          trackGoal(`contacts_${goalKey}_click`, {
+                            cta_location: 'contacts',
+                            source_context: `contacts_${goalKey}`,
+                          })
+                        }
+                      >
+                        <ContactIcon icon={channel.icon} className="contact-channel-icon" />
+                        <span>{channel.label}</span>
+                      </a>
+                    )
+                  })}
                 </div>
               </div>
               <div>

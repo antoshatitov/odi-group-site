@@ -120,6 +120,25 @@
   color: var(--color-moss-700);
 }
 
+.consent-link {
+  color: var(--color-moss-700);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(31, 95, 83, 0.35);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.consent-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.consent-link:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--focus-ring);
+}
+
 .field {
   display: flex;
   flex-direction: column;

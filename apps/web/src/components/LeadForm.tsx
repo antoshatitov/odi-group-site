@@ -246,7 +246,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
           />
           <span>
             Я соглашаюсь с{' '}
-            <a href="/consent" className="chip" target="_blank" rel="noreferrer">
+            <a href="/consent" className="consent-link" target="_blank" rel="noreferrer">
               условиями обработки персональных данных
             </a>
             .

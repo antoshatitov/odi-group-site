@@ -12,46 +12,49 @@ import Container from '../components/Container'
 import LeadForm from '../components/LeadForm'
 import Modal from '../components/Modal'
 import Section from '../components/Section'
-import { SHOW_PROJECTS } from '../config/featureFlags'
-import { projects } from '../data/projects'
+import { buildProjectItems, saleHouseItems } from '../data/showcaseGalleries'
 import { useDeferredMapScript } from '../hooks/useDeferredMapScript'
 import { useGalleryModalNavigation } from '../hooks/useGalleryModalNavigation'
 import { useLazyGalleryData } from '../hooks/useLazyGalleryData'
-import { useProjectFilters } from '../hooks/useProjectFilters'
 import ContactsSection from '../sections/ContactsSection'
 import GallerySection from '../sections/GallerySection'
 import HeroSection from '../sections/HeroSection'
-import ProjectsSection from '../sections/ProjectsSection'
 import ServicesSection from '../sections/ServicesSection'
-import type { GalleryItem, Project } from '../types'
+import type { ServiceItem } from '../sections/ServicesSection'
+import type { GalleryItem } from '../types'
 import { trackGoal } from '../utils/analytics'
 import { buildResponsiveSrcSet } from '../utils/images'
-import { formatArea, formatPrice } from '../utils/format'
 
-const services = [
+const services: ServiceItem[] = [
   {
     title: 'Проектирование и адаптация',
     text: 'Создаём проект под ваш участок и бюджет, учитываем инсоляцию, геологию и нормы.',
+    icon: 'draft',
   },
   {
     title: 'Строительство под ключ',
     text: 'Фундамент, коробка, кровля, инженерные сети и отделка — единый договор и контроль.',
+    icon: 'build',
   },
   {
     title: 'Технический надзор',
     text: 'Проводим авторский надзор, фиксируем этапы, даём фотоотчёты и доступ к онлайн-графику.',
+    icon: 'supervision',
   },
   {
     title: 'Подбор материалов',
     text: 'Помогаем выбрать решения по энергоэффективности, шумоизоляции и фасадам.',
+    icon: 'materials',
   },
   {
     title: 'Инженерные сети',
     text: 'Отопление, водоснабжение, вентиляция и электрика.',
+    icon: 'engineering',
   },
   {
     title: 'Сервис после сдачи',
     text: 'Сопровождение объекта и поддержка по гарантийным вопросам после ввода в эксплуатацию.',
+    icon: 'service',
   },
 ]
 
@@ -155,9 +158,7 @@ const getBoundedGalleryZoom = (
 const CostCalculator = lazy(() => import('../components/CostCalculator'))
 
 const Home = () => {
-  const { filters, setFilters, filteredProjects } = useProjectFilters(projects)
   const { galleryItems, isGalleryLoading, galleryLoadError } = useLazyGalleryData()
-  const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [galleryZoom, setGalleryZoom] = useState<GalleryZoomState>(defaultGalleryZoom)
@@ -462,10 +463,6 @@ const Home = () => {
     )
   }
 
-  const handleFiltersChange = (nextFilters: typeof filters) => {
-    setFilters(nextFilters)
-  }
-
   return (
     <>
       <HeroSection />
@@ -474,6 +471,30 @@ const Home = () => {
         items={galleryItems}
         isLoading={isGalleryLoading}
         loadError={galleryLoadError}
+        onOpenGallery={openGallery}
+      />
+
+      <GallerySection
+        id="sale"
+        tone="default"
+        eyebrow="Сейчас в продаже"
+        title="Сейчас в продаже"
+        intro="Новые дома, которые уже полностью готовы к продаже либо будут готовы в самое ближайшее время. С полностью готовым пакетом документов, поставленные на учет и подключенные к электросети. Все дома в этом разделе подходят под любой вид ипотеки, в том числе семейную ипотеку 6%."
+        emptyMessage="Дома в продаже появятся здесь в ближайшее время."
+        ariaLabel="Галерея домов в продаже"
+        items={saleHouseItems}
+        onOpenGallery={openGallery}
+      />
+
+      <GallerySection
+        id="projects"
+        tone="toned"
+        eyebrow="Проекты"
+        title="Проекты"
+        intro="Проекты домов, которые мы можем построить на заказ. Каждый проект может быть изменён по требованию заказчика. Также возможно строительство по вашему проекту."
+        emptyMessage="Проекты домов появятся здесь в ближайшее время."
+        ariaLabel="Галерея проектов домов"
+        items={buildProjectItems}
         onOpenGallery={openGallery}
       />
 
@@ -487,19 +508,14 @@ const Home = () => {
                 и области
               </h2>
               <p className="lead">
-                За 8 лет мы построили 76 домов и ежегодно строим от 10 проектов — под ключ и без
-                суеты для клиента. Наш подход простой: вы выбираете дом и принимаете решения по
-                пунктам, а все заботы — от организации работ и материалов до контроля качества и
-                сроков — берём на себя. Слаженная команда и отточенные процессы позволяют получить
-                ключи от готового дома уже через 3–4 месяца. Вы заказываете — мы делаем идеально. И
-                делаем так, чтобы вашим домом хотелось гордиться.
+                С 2018 мы построили более 80 частных домов. Каждый год мы реализуем более 10
+                проектов строительства — под ключ и без суеты для клиента. Наш подход простой: вы
+                выбираете дом и принимаете решения по пунктам, а все заботы — от организации работ
+                и материалов до контроля качества и сроков — берём на себя. Слаженная команда и
+                отточенные процессы позволяют получить ключи от готового дома уже через 3–4 месяца.
+                Вы заказываете — мы делаем идеально. И делаем так, чтобы вашим домом хотелось
+                гордиться.
               </p>
-              <div className="project-specs">
-                <span>Разработка проектов для строительства</span>
-                <span>Локальные подрядчики и поставщики</span>
-                <span>Контроль качества по чек-листам</span>
-                <span>Фото- и видеоотчёты на каждом этапе</span>
-              </div>
             </div>
             <Card className="about-list">
               <div className="stack">
@@ -556,18 +572,9 @@ const Home = () => {
         </Container>
       </Section>
 
-      {SHOW_PROJECTS && (
-        <ProjectsSection
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          projects={filteredProjects}
-          onOpenProject={setActiveProject}
-        />
-      )}
-
       <Section id="consultation">
         <Container>
-          <div className="contact-grid">
+          <div className="contact-grid contact-grid-single">
             <Card className="contact-card">
               <span className="eyebrow">Консультация</span>
               <h2 className="h2">Расскажите о вашем будущем доме</h2>
@@ -575,19 +582,19 @@ const Home = () => {
                 Мы перезвоним, уточним задачу и предложим сценарий строительства под ваш участок и
                 бюджет.
               </p>
-              <LeadForm source="consultation" />
-            </Card>
-            <Card className="contact-card" tone="solid">
-              <div className="stack">
-                <Badge>Персональный подход</Badge>
-                <h3 className="h3">Что обсудим на звонке</h3>
+              <div className="consultation-topics">
+                <div className="stack">
+                  <Badge>Персональный подход</Badge>
+                  <h3 className="h3">Что обсудим на звонке</h3>
+                </div>
+                <ul className="stack">
+                  <li>Параметры участка и геологию.</li>
+                  <li>Тип дома и желаемые материалы.</li>
+                  <li>Оценку бюджета и возможные оптимизации.</li>
+                  <li>Сроки проектирования и строительства.</li>
+                </ul>
               </div>
-              <ul className="stack" style={{ paddingLeft: '1.2rem', margin: 0 }}>
-                <li>Параметры участка и геологию.</li>
-                <li>Тип дома и желаемые материалы.</li>
-                <li>Оценку бюджета и возможные оптимизации.</li>
-                <li>Сроки проектирования и строительства.</li>
-              </ul>
+              <LeadForm source="consultation" />
             </Card>
           </div>
         </Container>
@@ -627,91 +634,6 @@ const Home = () => {
         <Suspense fallback={<div className="muted">Загружаем…</div>}>
           <CostCalculator />
         </Suspense>
-      </Modal>
-
-      <Modal
-        isOpen={Boolean(activeProject)}
-        title={activeProject?.name || ''}
-        onClose={() => setActiveProject(null)}
-        side={
-          activeProject && (
-            <div className="stack">
-              <span className="eyebrow">Заявка по проекту</span>
-              <p className="muted">
-                Оставьте контакты — мы подготовим консультацию и расчёт по выбранному проекту.
-              </p>
-              <LeadForm
-                source="project"
-                projectId={activeProject.id}
-                projectName={activeProject.name}
-              />
-            </div>
-          )
-        }
-      >
-        {activeProject && (
-          <div className="stack">
-            <p className="muted">{activeProject.description}</p>
-            <div className="project-specs">
-              <span>Площадь: {formatArea(activeProject.area)}</span>
-              <span>Этажность: {activeProject.floors}</span>
-              <span>Спальни: {activeProject.bedrooms}</span>
-              <span>Комнат: {activeProject.rooms}</span>
-              <span>Материал: {activeProject.material}</span>
-              <span>Стоимость: {formatPrice(activeProject.priceFrom)}</span>
-            </div>
-            <div className="stack">
-              <strong>Комплектация</strong>
-              <div className="project-meta">
-                {activeProject.equipment.map((item) => (
-                  <span key={item} className="pill">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="stack">
-              <strong>Особенности проекта</strong>
-              <div className="project-meta">
-                {activeProject.features.map((item) => (
-                  <span key={item} className="pill">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="stack">
-              <strong>Галерея</strong>
-              <div className="project-grid project-grid-compact">
-                {activeProject.gallery.map((image) => (
-                  <img
-                    key={image.src}
-                    src={image.src}
-                    alt={image.alt}
-                    loading="lazy"
-                    width={1200}
-                    height={900}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="stack">
-              <strong>Планировки</strong>
-              <div className="project-grid project-grid-compact">
-                {activeProject.plans.map((image) => (
-                  <img
-                    key={image.src}
-                    src={image.src}
-                    alt={image.alt}
-                    loading="lazy"
-                    width={1200}
-                    height={900}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </Modal>
 
       <Modal
