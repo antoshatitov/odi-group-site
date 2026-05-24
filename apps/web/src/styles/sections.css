@@ -195,18 +195,6 @@
   overflow: hidden;
 }
 
-.hero::after {
-  content: '';
-  position: absolute;
-  inset: auto auto -160px -120px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(208, 161, 91, 0.3) 0%, rgba(208, 161, 91, 0) 70%);
-  filter: blur(2px);
-  pointer-events: none;
-}
-
 .hero-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -439,18 +427,7 @@
     rgba(193, 138, 69, 0.68) 48%,
     rgba(31, 95, 83, 0.18) 100%
   );
-  opacity: 0;
-  transform-origin: left center;
-  transform: scaleX(0.08);
-  transition:
-    transform var(--duration-slow) var(--ease-out),
-    opacity var(--duration-slow) var(--ease-out);
   pointer-events: none;
-}
-
-.process-timeline-visible::before {
-  opacity: 1;
-  transform: scaleX(1);
 }
 
 .process-step {
@@ -462,19 +439,9 @@
   padding: calc(var(--timeline-axis) + 1.8rem) var(--space-4) var(--space-4);
   border-color: rgba(18, 25, 23, 0.12);
   background: linear-gradient(180deg, rgba(248, 246, 241, 0.97) 0%, rgba(241, 238, 231, 0.92) 100%);
-  opacity: 0;
-  transform: translateY(18px);
   transition:
-    opacity var(--duration-slow) var(--ease-out),
-    transform var(--duration-slow) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out);
-  will-change: transform, opacity;
-}
-
-.process-step-visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .process-step:hover {
@@ -1061,7 +1028,7 @@
   gap: var(--space-4);
 }
 
-.contact-card a:not(.btn):not(.consent-link) {
+.contact-card a:not(.btn):not(.consent-link):not(.contact-channel-link) {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
@@ -1242,12 +1209,6 @@
       rgba(193, 138, 69, 0.68) 48%,
       rgba(31, 95, 83, 0.18) 100%
     );
-    transform-origin: center top;
-    transform: scaleY(0.08);
-  }
-
-  .process-timeline-visible::before {
-    transform: scaleY(1);
   }
 
   .process-step {
@@ -1441,16 +1402,10 @@
   .process-step {
     min-height: 0;
     padding: calc(var(--timeline-axis) + 1.4rem) var(--space-3) var(--space-3);
-    transform: none;
     transition:
-      opacity 220ms var(--ease-out),
       box-shadow var(--duration-fast) var(--ease-out),
       border-color var(--duration-fast) var(--ease-out);
     transition-delay: 0ms !important;
-  }
-
-  .process-step-visible {
-    transform: none;
   }
 
   .process-step::before {

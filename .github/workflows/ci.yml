@@ -80,7 +80,7 @@ jobs:
         run: npm --workspace apps/web run media-check
       - name: Install Playwright browser
         run: npm --workspace apps/web run playwright:install:ci
-      - name: Run Playwright smoke
+      - name: Run Playwright smoke and analytics
         run: |
           npm --workspace apps/web run preview -- --host 127.0.0.1 --port 4173 &
           PREVIEW_PID=$!
@@ -92,5 +92,4 @@ jobs:
             sleep 1
           done
           E2E_BASE_URL=http://127.0.0.1:4173 npm --workspace apps/web run e2e:smoke
-      - name: Run Playwright analytics
-        run: E2E_BASE_URL=http://127.0.0.1:4173 npm --workspace apps/web run e2e:analytics
+          E2E_BASE_URL=http://127.0.0.1:4173 npm --workspace apps/web run e2e:analytics
