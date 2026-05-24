@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import Button from './Button'
-import { SHOW_PROJECTS } from '../config/featureFlags'
 import { trackGoal } from '../utils/analytics'
 import { resolveHomeSectionHref } from '../utils/navigation'
 
 const navLinks = [
+  { label: 'Построено', hash: '#gallery' },
+  { label: 'Продажа', hash: '#sale' },
+  { label: 'Проекты', hash: '#projects' },
   { label: 'О компании', hash: '#about' },
   { label: 'Услуги', hash: '#services' },
-  { label: 'Проекты', hash: '#projects' },
-  { label: 'Построено', hash: '#gallery' },
   { label: 'Контакты', hash: '#contacts' },
 ]
 
@@ -32,9 +32,6 @@ const SiteHeader = () => {
   const lockedScrollYRef = useRef(0)
   const previousBodyStylesRef = useRef<BodyScrollLockStyles | null>(null)
   const skipScrollRestoreRef = useRef(false)
-  const visibleLinks = SHOW_PROJECTS
-    ? navLinks
-    : navLinks.filter((link) => link.hash !== '#projects')
 
   const openMenu = () => {
     skipScrollRestoreRef.current = false
@@ -186,7 +183,7 @@ const SiteHeader = () => {
               </Button>
             </div>
             <div className="mobile-nav-links">
-              {visibleLinks.map((link) => (
+              {navLinks.map((link) => (
                 <a
                   key={link.hash}
                   href={resolveHomeSectionHref(link.hash)}
@@ -248,7 +245,7 @@ const SiteHeader = () => {
             <small>строительная компания</small>
           </a>
           <nav className="nav-links" aria-label="Основная навигация">
-            {visibleLinks.map((link) => (
+            {navLinks.map((link) => (
               <a key={link.hash} href={resolveHomeSectionHref(link.hash)} className="nav-link">
                 {link.label}
               </a>

@@ -96,7 +96,7 @@ const runSmokeChecks = async (url) => {
     await desktopPage.goto(url, { waitUntil: 'domcontentloaded' })
     await desktopPage.waitForSelector('#main-content')
 
-    for (const selector of ['#about', '#services', '#gallery', '#contacts']) {
+    for (const selector of ['#gallery', '#sale', '#projects', '#about', '#services', '#contacts']) {
       const section = await desktopPage.$(selector)
       if (!section) {
         throw new Error(`Missing required section: ${selector}`)
@@ -152,8 +152,8 @@ const runSmokeChecks = async (url) => {
     assert.equal(mobileMenuState.panelScrollTop, 0, 'Mobile menu must open at scrollTop 0')
     assert.equal(
       mobileMenuState.firstLinkText,
-      'О компании',
-      'First mobile nav link must remain "О компании"',
+      'Построено',
+      'First mobile nav link must match the primary gallery section',
     )
     assert(mobileMenuState.headerVisible, 'Mobile menu header must be visible on open')
     assert(mobileMenuState.firstLinkVisible, 'First mobile nav link must be visible on open')

@@ -7,6 +7,13 @@ import { buildResponsiveSrcSet } from '../utils/images'
 
 type GallerySectionProps = {
   items: GalleryItem[]
+  id?: string
+  tone?: 'default' | 'toned' | 'ink'
+  eyebrow?: string
+  title?: string
+  intro?: string
+  emptyMessage?: string
+  ariaLabel?: string
   isLoading?: boolean
   loadError?: string | null
   onOpenGallery: (item: GalleryItem, photoIndex?: number) => void
@@ -61,6 +68,13 @@ const GalleryPicture = ({ image, sizes, loading = 'lazy' }: GalleryPictureProps)
 
 const GallerySection = ({
   items,
+  id = 'gallery',
+  tone = 'toned',
+  eyebrow = 'Построено нами',
+  title = 'Реализованные проекты',
+  intro = 'Дома, которые уже полностью построены и переданы своим владельцам',
+  emptyMessage = 'Проекты за последнее время появятся здесь',
+  ariaLabel = 'Галерея построенных объектов',
   isLoading = false,
   loadError = null,
   onOpenGallery,
@@ -70,22 +84,19 @@ const GallerySection = ({
   const showEmpty = !isLoading && !showError && items.length === 0
 
   return (
-    <Section id="gallery" tone="toned">
+    <Section id={id} tone={tone}>
       <Container size="wide">
         <div className="stack" style={{ gap: 'var(--space-6)' }}>
           <div className="gallery-grid-heading">
             <div className="stack">
-              <span className="eyebrow">Построено нами</span>
-              <h2 className="h2">Реализованные проекты</h2>
+              <span className="eyebrow">{eyebrow}</span>
+              <h2 className="h2">{title}</h2>
             </div>
-            <p className="gallery-grid-intro">
-              Дома, которые уже стоят на своих участках: площадь, место и фотографии без лишней
-              витрины.
-            </p>
+            <p className="gallery-grid-intro">{intro}</p>
           </div>
 
           {items.length > 0 ? (
-            <div className="built-gallery-grid" aria-label="Галерея построенных объектов">
+            <div className="built-gallery-grid" aria-label={ariaLabel}>
               {items.map((item, index) => {
                 const coverPhoto = item.cover ?? item.photos[0]
                 if (!coverPhoto) return null
@@ -140,7 +151,7 @@ const GallerySection = ({
           {showError ? (
             <p className="muted">Не удалось загрузить галерею. Обновите страницу.</p>
           ) : null}
-          {showEmpty ? <p className="muted">Реализованные объекты появятся здесь.</p> : null}
+          {showEmpty ? <p className="muted gallery-empty">{emptyMessage}</p> : null}
         </div>
       </Container>
     </Section>
