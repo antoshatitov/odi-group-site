@@ -30,7 +30,7 @@ API:
 - `POST /api/cost-estimate` — расчёт стоимости
 - `GET  /api/health` — healthcheck
 
-Отправка сообщений в Telegram. Антиспам: honeypot, rate-limit, дедупликация, опциональная CAPTCHA (см. серверный `index.js` и связанные модули).
+Отправка сообщений в Telegram. Антиспам: honeypot, rate-limit, дедупликация, опциональная CAPTCHA (см. `apps/server/src/index.js` и связанные серверные модули).
 
 ---
 
@@ -49,7 +49,7 @@ API:
 ### Backend
 - Node.js 20+ (ESM), Fastify 5
 - `@fastify/cors`, `@fastify/helmet`, `@fastify/rate-limit`
-- вход: `index.js` (или серверный пакет, если он вынесен в `apps/server` — ориентируйся по файлам в репо)
+- вход: `apps/server/src/index.js`
 
 ### Deploy
 - Nginx и systemd конфиги: `deploy/`
@@ -59,12 +59,14 @@ API:
 
 ## 3) Skills (инструкции для агента)
 
-В репозитории должны оставаться только следующие локальные skills:
+Основные локальные skills для типовых задач:
 - `frontend-responsive-ui`
 - `web-design-guidelines`
 - `vercel-react-best-practices`
 - `agent-browser`
 - `frontend-design`
+
+В репозитории могут быть и другие локальные skills. Используй их, если задача явно относится к их области, но не обновляй этот раздел только из-за их наличия.
 
 Правило:
 - Если задача относится к области, покрытой локальным skill — открой и следуй инструкциям из `.agents/skills/<skill-name>/SKILL.md`.
@@ -114,19 +116,19 @@ Playwright MCP разрешён для UI checks и исследовательс
 - Preview (frontend): `npm run preview:web`
 - Dev (server): `npm run dev:server` (если присутствует)
 - Start (server): `npm run start:server` (если присутствует)
-- Install Playwright browser (web): `npm --workspace apps/web run playwright:install`
-- UI smoke tests (web): `npm --workspace apps/web run e2e:smoke`
-- Analytics e2e tests (web): `npm --workspace apps/web run e2e:analytics`
-- Analytics e2e tests (root): `npm run test:e2e:analytics:web`
+- Install Playwright browser (web): `npm run playwright:install:web`
+- UI smoke tests (web): `npm run test:e2e:web`
+- Analytics e2e tests (web): `npm run test:e2e:analytics:web`
+- Server tests: `npm run test:server`
 
 Правило: **не придумывай команды**. Если не уверен — проверь `package.json` и используй только существующие скрипты.
 
 ---
 
-## 6) Рабочий процесс “1 сессия = 1 PR” (обязательный)
+## 6) Рабочий процесс “1 задача = 1 PR” (когда пользователь просит публикацию)
 
-Любая задача выполняется в одной сессии и оформляется как один PR.  
-**Не смешивать разные темы/рефакторинги/апдейты в одном PR.**
+Работай в рамках одной задачи и не смешивай разные темы/рефакторинги/апдейты.  
+Commit, push и PR выполняются только когда пользователь явно попросил commit/push/PR или публикацию изменений.
 
 ### 6.1 Branch Naming (Agent-generated)
 Агент генерирует имя ветки автоматически, если пользователь не задал имя явно.
@@ -198,8 +200,10 @@ PR-описание должно включать все секции:
 Агент сначала показывает PR summary в чате, затем создаёт PR и после этого публикует ссылку на PR.
 
 ### 6.5 Merging
-- Агент **никогда не мержит** PR.
-- Решение о merge принимает только пользователь.
+- Агент не выполняет merge без отдельной явной команды пользователя.
+- Перед merge агент обязан проверить статус CI и целевую ветку PR.
+- Запрещено мержить PR с падающим/незавершённым CI, если пользователь явно не подтвердил исключение.
+- Запрещено выполнять merge в `main` локально или пушить напрямую в `main`.
 
 ---
 
@@ -221,7 +225,9 @@ PR-описание должно включать все секции:
 
 ### Фаза C — Самопроверка
 Минимум:
-- `npm run dev:web` и ручная проверка сценариев
+- для frontend/UI-задач: `npm run dev:web` и ручная проверка релевантных сценариев
+- для backend/API-задач: `npm run test:server` и, если нужно, локальная проверка эндпоинтов
+- для docs-only задач dev-сервер запускать не нужно
 - если есть lint/typecheck/build — прогнать релевантные команды
 - для UI-задач: подтверждение через Playwright MCP
 
@@ -345,7 +351,8 @@ PR-описание должно включать все секции:
 - [ ] План опубликован до изменений
 - [ ] Изменения минимальны и по задаче (не смешано несколько тем)
 - [ ] Нет секретов/ключей/ПДн в коде и логах
-- [ ] `npm run dev:web` запускается, базовые сценарии работают
+- [ ] Для frontend/UI-задач `npm run dev:web` запускается, базовые сценарии работают
+- [ ] Для backend/API-задач `npm run test:server` проходит
 - [ ] Если есть lint/typecheck/build — релевантные проверки пройдены
 - [ ] Для UI-задач выполнен UI regression checklist + при необходимости Playwright MCP
 - [ ] Итоговый отчёт: “что изменено и как проверить” готов
