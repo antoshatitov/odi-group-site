@@ -1,4 +1,4 @@
-export type ContactIconName = 'telegram' | 'max' | 'vk' | 'whatsapp' | 'email'
+export type ContactIconName = 'telegram' | 'max' | 'vk' | 'whatsapp'
 
 type ContactIconProps = {
   icon: ContactIconName
@@ -30,24 +30,9 @@ const ContactIcon = ({ icon, className = 'contact-menu-icon' }: ContactIconProps
     )
   }
 
-  if (icon === 'email') {
-    return (
-      <svg aria-hidden="true" className={className} focusable="false" viewBox="0 0 24 24">
-        <path
-          d="M4.25 6.75h15.5v10.5H4.25V6.75Zm.75 1.1 7 5.15 7-5.15"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.8"
-        />
-      </svg>
-    )
-  }
-
   return (
-    <svg aria-hidden="true" className={className} focusable="false" viewBox="0 0 24 24">
-      <path d="M4 7.2c0-1.44.95-2.45 2.34-2.45.83 0 1.53.38 2.03 1.12L12 11.08l3.63-5.21c.5-.74 1.2-1.12 2.03-1.12C19.05 4.75 20 5.76 20 7.2v9.6h-3.35V10.7l-2.8 4.02h-3.7l-2.8-4.02v6.1H4V7.2Z" />
+    <svg aria-hidden="true" className={className} focusable="false" viewBox="0 0 720 720">
+      <path d="M350.4 9.6C141.8 20.5 4.1 184.1 12.8 390.4c3.8 90.3 40.1 168 48.7 253.7 2.2 22.2-4.2 49.6 21.4 59.3 31.5 11.9 79.8-8.1 106.2-26.4 9-6.1 17.6-13.2 24.2-22 27.3 18.1 53.2 35.6 85.7 43.4 143.1 34.3 299.9-44.2 369.6-170.3C799.6 291.2 622.5-4.6 350.4 9.6h0ZM269.4 504c-11.3 8.8-22.2 20.8-34.7 27.7-18.1 9.7-23.7-.4-30.5-16.4-21.4-50.9-24-137.6-11.5-190.9 16.8-72.5 72.9-136.3 150-143.1 78-6.9 150.4 32.7 183.1 104.2 72.4 159.1-112.9 316.2-256.4 218.6h0Z" />
     </svg>
   )
 }

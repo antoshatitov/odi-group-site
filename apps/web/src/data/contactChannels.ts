@@ -39,9 +39,4 @@ export const heroContactChannels: ContactChannel[] = [
   messengerChannels[1],
   messengerChannels[2],
   messengerChannels[3],
-  {
-    label: 'Email',
-    href: 'mailto:bon2801@yandex.ru',
-    icon: 'email',
-  },
 ]
