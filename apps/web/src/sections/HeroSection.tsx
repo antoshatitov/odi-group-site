@@ -219,9 +219,8 @@ const HeroSection = () => {
             <div className="hero-stats">
               {heroStats.map((stat, index) => (
                 <div className="stat-card reveal" data-delay={index + 4} key={stat.label}>
-                  <strong>
+                  <strong aria-label={`${stat.value} ${stat.label}`}>
                     <RollingStatValue value={stat.value} />
-                    <span className="stat-readable">{stat.value}</span>
                   </strong>
                   <span className="muted">{stat.label}</span>
                 </div>

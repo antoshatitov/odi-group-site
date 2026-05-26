@@ -302,11 +302,7 @@
 .stat-card strong {
   display: inline-flex;
   align-items: flex-start;
-  font-family: var(--font-body);
-  font-size: 4.75rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 0.86;
+  font: 600 4.75rem/0.86 var(--font-body);
   color: #181a19;
   font-variant-numeric: tabular-nums;
 }
@@ -314,10 +310,8 @@
 .stat-card .muted {
   max-width: 14rem;
   color: rgba(18, 25, 23, 0.58);
-  font-family: var(--font-body);
   font-size: 1.18rem;
   font-weight: 500;
-  letter-spacing: 0;
   line-height: 1.08;
 }
 
@@ -338,10 +332,8 @@
 
 .stat-digit-strip {
   display: block;
-  transform: translateY(calc(var(--digit) * -1em));
   animation: stat-digit-roll 3000ms var(--ease-out) both;
   animation-delay: calc(520ms + var(--digit-index) * 140ms);
-  will-change: transform;
 }
 
 .stat-digit-item {
@@ -354,18 +346,6 @@
   display: inline-block;
   line-height: 0.82;
   margin-left: 0.02em;
-}
-
-.stat-readable {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 @keyframes stat-digit-roll {
