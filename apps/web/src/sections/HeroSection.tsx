@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import Button from '../components/Button'
 import ContactIcon from '../components/ContactIcon'
@@ -16,6 +16,27 @@ type ConnectionInfo = {
 }
 
 const contactMenuId = 'hero-contact-menu'
+const rollingDigits = Array.from({ length: 10 }, (_, index) => String(index))
+
+type HeroStat = {
+  value: string
+  label: string
+}
+
+const heroStats: HeroStat[] = [
+  {
+    value: '8+',
+    label: 'лет в строительстве',
+  },
+  {
+    value: '6%',
+    label: 'ипотека для семей с детьми',
+  },
+  {
+    value: '79+',
+    label: 'домов сданы под ключ',
+  },
+]
 
 const supportsReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -28,6 +49,39 @@ const supportsSaveData = () => {
 }
 
 const shouldAutoplayHero = () => !supportsReducedMotion() && !supportsSaveData()
+
+const RollingStatValue = ({ value }: { value: string }) => (
+  <span className="stat-value" aria-hidden="true">
+    {Array.from(value).map((character, index) => {
+      const digit = Number(character)
+      const isDigit = Number.isInteger(digit)
+
+      if (!isDigit) {
+        return (
+          <span className="stat-symbol" key={`${character}-${index}`}>
+            {character}
+          </span>
+        )
+      }
+
+      return (
+        <span
+          className="stat-digit"
+          key={`${character}-${index}`}
+          style={{ '--digit': digit, '--digit-index': index } as CSSProperties}
+        >
+          <span className="stat-digit-strip">
+            {rollingDigits.map((rollingDigit) => (
+              <span className="stat-digit-item" key={rollingDigit}>
+                {rollingDigit}
+              </span>
+            ))}
+          </span>
+        </span>
+      )
+    })}
+  </span>
+)
 
 const HeroSection = () => {
   const [allowAutoplay, setAllowAutoplay] = useState(shouldAutoplayHero)
@@ -163,18 +217,15 @@ const HeroSection = () => {
               </a>
             </div>
             <div className="hero-stats">
-              <div className="stat-card">
-                <strong>8 лет</strong>
-                <span className="muted">опыта в строительстве</span>
-              </div>
-              <div className="stat-card">
-                <strong>76 домов</strong>
-                <span className="muted">сданы под ключ</span>
-              </div>
-              <div className="stat-card">
-                <strong>От 6%</strong>
-                <span className="muted">для семей с детьми</span>
-              </div>
+              {heroStats.map((stat, index) => (
+                <div className="stat-card reveal" data-delay={index + 4} key={stat.label}>
+                  <strong>
+                    <RollingStatValue value={stat.value} />
+                    <span className="stat-readable">{stat.value}</span>
+                  </strong>
+                  <span className="muted">{stat.label}</span>
+                </div>
+              ))}
             </div>
           </div>
           <div className="hero-visual">

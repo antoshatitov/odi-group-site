@@ -288,21 +288,93 @@
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin-top: var(--space-4);
+  gap: var(--space-5);
+  margin-top: var(--space-5);
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(18, 25, 23, 0.08);
-  border-radius: var(--radius-m);
-  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
   text-align: left;
 }
 
 .stat-card strong {
-  font-size: var(--text-xl);
+  display: inline-flex;
+  align-items: flex-start;
+  font-family: var(--font-body);
+  font-size: 4.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 0.86;
+  color: #181a19;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card .muted {
+  max-width: 14rem;
+  color: rgba(18, 25, 23, 0.58);
+  font-family: var(--font-body);
+  font-size: 1.18rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.stat-value {
+  display: inline-flex;
+  align-items: flex-start;
+  height: 0.9em;
+}
+
+.stat-digit {
+  --digit: 0;
+  --digit-index: 0;
+  display: inline-block;
+  width: 0.58em;
+  height: 0.9em;
+  overflow: hidden;
+}
+
+.stat-digit-strip {
   display: block;
+  transform: translateY(calc(var(--digit) * -1em));
+  animation: stat-digit-roll 3000ms var(--ease-out) both;
+  animation-delay: calc(520ms + var(--digit-index) * 140ms);
+  will-change: transform;
+}
+
+.stat-digit-item {
+  display: block;
+  height: 1em;
+  line-height: 0.9;
+}
+
+.stat-symbol {
+  display: inline-block;
+  line-height: 0.82;
+  margin-left: 0.02em;
+}
+
+.stat-readable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes stat-digit-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(var(--digit) * -1em));
+  }
 }
 
 .hero-visual {
@@ -1241,6 +1313,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .stat-card strong {
+    font-size: 4rem;
+  }
+
   .gallery-grid-heading {
     grid-template-columns: 1fr;
     gap: var(--space-3);
@@ -1325,6 +1401,15 @@
   .hero-image img,
   .hero-image video {
     object-position: 50% 45%;
+  }
+
+  .stat-card strong {
+    font-size: 3.35rem;
+  }
+
+  .stat-card .muted {
+    max-width: 18rem;
+    font-size: 1.08rem;
   }
 
   .gallery-main {
