@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import Button from '../components/Button'
 import ContactIcon from '../components/ContactIcon'
@@ -16,6 +16,72 @@ type ConnectionInfo = {
 }
 
 const contactMenuId = 'hero-contact-menu'
+const rollingDigits = Array.from({ length: 10 }, (_, index) => String(index))
+
+type HeroStat = {
+  value: string
+  label: string
+}
+
+const heroStats: HeroStat[] = [
+  {
+    value: '8+',
+    label: 'лет в строительстве',
+  },
+  {
+    value: '6%',
+    label: 'ипотека для семей с детьми',
+  },
+  {
+    value: '79+',
+    label: 'домов сданы под ключ',
+  },
+]
+
+const statNumberStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'flex-start',
+  fontFamily: 'var(--font-body)',
+  fontSize: 'var(--stat-value-size)',
+  fontWeight: 600,
+  lineHeight: 0.86,
+  color: '#181a19',
+  fontVariantNumeric: 'tabular-nums',
+}
+
+const statLabelStyle: CSSProperties = {
+  maxWidth: '14rem',
+  color: 'rgba(18, 25, 23, 0.58)',
+  fontSize: '1.18rem',
+  fontWeight: 500,
+  lineHeight: 1.08,
+}
+
+const statValueStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'flex-start',
+  height: '0.9em',
+  pointerEvents: 'none',
+}
+
+const statDigitStyle: CSSProperties = {
+  display: 'inline-block',
+  width: '0.58em',
+  height: '0.9em',
+  overflow: 'hidden',
+}
+
+const statDigitItemStyle: CSSProperties = {
+  display: 'block',
+  height: '1em',
+  lineHeight: 0.9,
+}
+
+const statSymbolStyle: CSSProperties = {
+  display: 'inline-block',
+  lineHeight: 0.82,
+  marginLeft: '0.02em',
+}
 
 const supportsReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -28,6 +94,43 @@ const supportsSaveData = () => {
 }
 
 const shouldAutoplayHero = () => !supportsReducedMotion() && !supportsSaveData()
+
+const getDigitStripStyle = (digit: number, index: number): CSSProperties =>
+  ({
+    '--digit': digit,
+    display: 'block',
+    animation: 'stat-digit-roll 3000ms var(--ease-out) both',
+    animationDelay: `${520 + index * 140}ms`,
+  }) as CSSProperties
+
+const RollingStatValue = ({ value }: { value: string }) => (
+  <span aria-hidden="true" style={statValueStyle}>
+    {Array.from(value).map((character, index) => {
+      const digit = Number(character)
+      const isDigit = Number.isInteger(digit)
+
+      if (!isDigit) {
+        return (
+          <span key={`${character}-${index}`} style={statSymbolStyle}>
+            {character}
+          </span>
+        )
+      }
+
+      return (
+        <span key={`${character}-${index}`} style={statDigitStyle}>
+          <span style={getDigitStripStyle(digit, index)}>
+            {rollingDigits.map((rollingDigit) => (
+              <span key={rollingDigit} style={statDigitItemStyle}>
+                {rollingDigit}
+              </span>
+            ))}
+          </span>
+        </span>
+      )
+    })}
+  </span>
+)
 
 const HeroSection = () => {
   const [allowAutoplay, setAllowAutoplay] = useState(shouldAutoplayHero)
@@ -163,18 +266,20 @@ const HeroSection = () => {
               </a>
             </div>
             <div className="hero-stats">
-              <div className="stat-card">
-                <strong>8 лет</strong>
-                <span className="muted">опыта в строительстве</span>
-              </div>
-              <div className="stat-card">
-                <strong>76 домов</strong>
-                <span className="muted">сданы под ключ</span>
-              </div>
-              <div className="stat-card">
-                <strong>От 6%</strong>
-                <span className="muted">для семей с детьми</span>
-              </div>
+              {heroStats.map((stat, index) => (
+                <div
+                  className="stat-card reveal"
+                  key={stat.label}
+                  style={{ animationDelay: `${480 + index * 120}ms` }}
+                >
+                  <strong aria-label={`${stat.value} ${stat.label}`} style={statNumberStyle}>
+                    <RollingStatValue value={stat.value} />
+                  </strong>
+                  <span className="muted" style={statLabelStyle}>
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
           <div className="hero-visual">

@@ -288,21 +288,24 @@
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin-top: var(--space-4);
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  pointer-events: none;
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(18, 25, 23, 0.08);
-  border-radius: var(--radius-m);
-  padding: var(--space-3);
-  text-align: left;
+  --stat-value-size: 4.75rem;
+  display: grid;
+  gap: var(--space-1);
 }
 
-.stat-card strong {
-  font-size: var(--text-xl);
-  display: block;
+@keyframes stat-digit-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(var(--digit) * -1em));
+  }
 }
 
 .hero-visual {
@@ -1241,6 +1244,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .stat-card {
+    --stat-value-size: 4rem;
+  }
+
   .gallery-grid-heading {
     grid-template-columns: 1fr;
     gap: var(--space-3);
@@ -1325,6 +1332,10 @@
   .hero-image img,
   .hero-image video {
     object-position: 50% 45%;
+  }
+
+  .stat-card {
+    --stat-value-size: 3.35rem;
   }
 
   .gallery-main {
