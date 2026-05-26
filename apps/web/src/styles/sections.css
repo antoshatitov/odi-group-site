@@ -290,6 +290,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-5);
   margin-top: var(--space-5);
+  pointer-events: none;
 }
 
 .stat-card {

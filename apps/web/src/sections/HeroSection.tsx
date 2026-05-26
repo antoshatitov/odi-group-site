@@ -61,6 +61,7 @@ const statValueStyle: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'flex-start',
   height: '0.9em',
+  pointerEvents: 'none',
 }
 
 const statDigitStyle: CSSProperties = {
