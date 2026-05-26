@@ -160,18 +160,6 @@ section {
   animation-delay: 360ms;
 }
 
-.reveal[data-delay='4'] {
-  animation-delay: 480ms;
-}
-
-.reveal[data-delay='5'] {
-  animation-delay: 600ms;
-}
-
-.reveal[data-delay='6'] {
-  animation-delay: 720ms;
-}
-
 @keyframes rise {
   from {
     opacity: 0;

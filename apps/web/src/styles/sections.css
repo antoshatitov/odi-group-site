@@ -293,59 +293,9 @@
 }
 
 .stat-card {
+  --stat-value-size: 4.75rem;
   display: grid;
   gap: var(--space-1);
-  align-content: start;
-  text-align: left;
-}
-
-.stat-card strong {
-  display: inline-flex;
-  align-items: flex-start;
-  font: 600 4.75rem/0.86 var(--font-body);
-  color: #181a19;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-card .muted {
-  max-width: 14rem;
-  color: rgba(18, 25, 23, 0.58);
-  font-size: 1.18rem;
-  font-weight: 500;
-  line-height: 1.08;
-}
-
-.stat-value {
-  display: inline-flex;
-  align-items: flex-start;
-  height: 0.9em;
-}
-
-.stat-digit {
-  --digit: 0;
-  --digit-index: 0;
-  display: inline-block;
-  width: 0.58em;
-  height: 0.9em;
-  overflow: hidden;
-}
-
-.stat-digit-strip {
-  display: block;
-  animation: stat-digit-roll 3000ms var(--ease-out) both;
-  animation-delay: calc(520ms + var(--digit-index) * 140ms);
-}
-
-.stat-digit-item {
-  display: block;
-  height: 1em;
-  line-height: 0.9;
-}
-
-.stat-symbol {
-  display: inline-block;
-  line-height: 0.82;
-  margin-left: 0.02em;
 }
 
 @keyframes stat-digit-roll {
@@ -1293,8 +1243,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .stat-card strong {
-    font-size: 4rem;
+  .stat-card {
+    --stat-value-size: 4rem;
   }
 
   .gallery-grid-heading {
@@ -1383,13 +1333,8 @@
     object-position: 50% 45%;
   }
 
-  .stat-card strong {
-    font-size: 3.35rem;
-  }
-
-  .stat-card .muted {
-    max-width: 18rem;
-    font-size: 1.08rem;
+  .stat-card {
+    --stat-value-size: 3.35rem;
   }
 
   .gallery-main {

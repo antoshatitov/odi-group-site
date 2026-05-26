@@ -38,6 +38,50 @@ const heroStats: HeroStat[] = [
   },
 ]
 
+const statNumberStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'flex-start',
+  fontFamily: 'var(--font-body)',
+  fontSize: 'var(--stat-value-size)',
+  fontWeight: 600,
+  lineHeight: 0.86,
+  color: '#181a19',
+  fontVariantNumeric: 'tabular-nums',
+}
+
+const statLabelStyle: CSSProperties = {
+  maxWidth: '14rem',
+  color: 'rgba(18, 25, 23, 0.58)',
+  fontSize: '1.18rem',
+  fontWeight: 500,
+  lineHeight: 1.08,
+}
+
+const statValueStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'flex-start',
+  height: '0.9em',
+}
+
+const statDigitStyle: CSSProperties = {
+  display: 'inline-block',
+  width: '0.58em',
+  height: '0.9em',
+  overflow: 'hidden',
+}
+
+const statDigitItemStyle: CSSProperties = {
+  display: 'block',
+  height: '1em',
+  lineHeight: 0.9,
+}
+
+const statSymbolStyle: CSSProperties = {
+  display: 'inline-block',
+  lineHeight: 0.82,
+  marginLeft: '0.02em',
+}
+
 const supportsReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -50,29 +94,33 @@ const supportsSaveData = () => {
 
 const shouldAutoplayHero = () => !supportsReducedMotion() && !supportsSaveData()
 
+const getDigitStripStyle = (digit: number, index: number): CSSProperties =>
+  ({
+    '--digit': digit,
+    display: 'block',
+    animation: 'stat-digit-roll 3000ms var(--ease-out) both',
+    animationDelay: `${520 + index * 140}ms`,
+  }) as CSSProperties
+
 const RollingStatValue = ({ value }: { value: string }) => (
-  <span className="stat-value" aria-hidden="true">
+  <span aria-hidden="true" style={statValueStyle}>
     {Array.from(value).map((character, index) => {
       const digit = Number(character)
       const isDigit = Number.isInteger(digit)
 
       if (!isDigit) {
         return (
-          <span className="stat-symbol" key={`${character}-${index}`}>
+          <span key={`${character}-${index}`} style={statSymbolStyle}>
             {character}
           </span>
         )
       }
 
       return (
-        <span
-          className="stat-digit"
-          key={`${character}-${index}`}
-          style={{ '--digit': digit, '--digit-index': index } as CSSProperties}
-        >
-          <span className="stat-digit-strip">
+        <span key={`${character}-${index}`} style={statDigitStyle}>
+          <span style={getDigitStripStyle(digit, index)}>
             {rollingDigits.map((rollingDigit) => (
-              <span className="stat-digit-item" key={rollingDigit}>
+              <span key={rollingDigit} style={statDigitItemStyle}>
                 {rollingDigit}
               </span>
             ))}
@@ -218,11 +266,17 @@ const HeroSection = () => {
             </div>
             <div className="hero-stats">
               {heroStats.map((stat, index) => (
-                <div className="stat-card reveal" data-delay={index + 4} key={stat.label}>
-                  <strong aria-label={`${stat.value} ${stat.label}`}>
+                <div
+                  className="stat-card reveal"
+                  key={stat.label}
+                  style={{ animationDelay: `${480 + index * 120}ms` }}
+                >
+                  <strong aria-label={`${stat.value} ${stat.label}`} style={statNumberStyle}>
                     <RollingStatValue value={stat.value} />
                   </strong>
-                  <span className="muted">{stat.label}</span>
+                  <span className="muted" style={statLabelStyle}>
+                    {stat.label}
+                  </span>
                 </div>
               ))}
             </div>
