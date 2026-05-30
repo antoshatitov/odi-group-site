@@ -28,6 +28,11 @@ const CALC_FAST_SUBMIT_MS = 4000
 const CALC_MAX_OPEN_WINDOW_MS = 2 * 60 * 60 * 1000
 const CALC_ALLOWED_FUTURE_SKEW_MS = 2 * 60 * 1000
 
+const createPhoneLogHash = (phone, salt) => {
+  const normalized = normalizeText(phone, 40)
+  return normalized ? hashValue(normalized, salt) : null
+}
+
 export const createCostEstimateRuntime = (config) => ({
   metrics: createCalcMetrics(),
   ipLimiter: createSlidingWindowLimiter(
@@ -160,7 +165,11 @@ const validateCalcTimestamps = ({ openedAt, submittedAt, now }) => {
   return { valid: true, submitDelta }
 }
 
-export const registerCostEstimateRoute = (server, config, runtime = createCostEstimateRuntime(config)) => {
+export const registerCostEstimateRoute = (
+  server,
+  config,
+  runtime = createCostEstimateRuntime(config),
+) => {
   server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply) => {
     const {
       floors,
@@ -197,18 +206,32 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
     const now = Date.now()
     const ip = request.ip
     const userAgent = request.headers['user-agent']
+    const rawPhoneHash = createPhoneLogHash(phone, config.logHashSalt)
 
     if (!consent) {
       runtime.metrics.blocked += 1
-      server.log.info({ event: 'calc_blocked', reason: 'missing_consent', ip, phone, userAgent })
+      server.log.info({
+        event: 'calc_blocked',
+        reason: 'missing_consent',
+        ip,
+        phoneHash: rawPhoneHash,
+        userAgent,
+      })
       reply.code(400).send({ error: 'Consent is required' })
       return
     }
 
     const normalizedPhone = normalizePhone(phone)
+    const phoneHash = createPhoneLogHash(normalizedPhone, config.logHashSalt) || rawPhoneHash
     if (!normalizedPhone) {
       runtime.metrics.blocked += 1
-      server.log.info({ event: 'calc_blocked', reason: 'invalid_phone', ip, phone, userAgent })
+      server.log.info({
+        event: 'calc_blocked',
+        reason: 'invalid_phone',
+        ip,
+        phoneHash: rawPhoneHash,
+        userAgent,
+      })
       reply.code(400).send({ error: 'Invalid phone' })
       return
     }
@@ -222,7 +245,13 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
 
     if (website) {
       runtime.metrics.blocked += 1
-      server.log.info({ event: 'calc_dropped', reason: 'honeypot', ip, phone: normalizedPhone, userAgent })
+      server.log.info({
+        event: 'calc_dropped',
+        reason: 'honeypot',
+        ip,
+        phoneHash,
+        userAgent,
+      })
       reply.code(200).send(responsePayload)
       return
     }
@@ -233,7 +262,7 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
         event: 'calc_blocked',
         reason: 'captcha_required',
         ip,
-        phone: normalizedPhone,
+        phoneHash,
         userAgent,
       })
       reply.code(400).send({ error: 'Captcha required' })
@@ -257,7 +286,7 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
           event: 'calc_blocked',
           reason: captchaResult.misconfigured ? 'captcha_misconfigured' : 'captcha_failed',
           ip,
-          phone: normalizedPhone,
+          phoneHash,
           userAgent,
         })
 
@@ -271,6 +300,20 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
       }
     }
 
+    const timestampValidation = validateCalcTimestamps({ openedAt, submittedAt, now })
+    if (!timestampValidation.valid) {
+      runtime.metrics.blocked += 1
+      server.log.info({
+        event: 'calc_blocked',
+        reason: timestampValidation.reason,
+        ip,
+        phoneHash,
+        userAgent,
+      })
+      reply.code(400).send({ error: 'Invalid timing fields' })
+      return
+    }
+
     const ipCheck = runtime.ipLimiter.check(ip, now)
     if (!ipCheck.allowed) {
       runtime.metrics.blocked += 1
@@ -278,7 +321,7 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
         event: 'calc_blocked',
         reason: 'ip_rate_limit',
         ip,
-        phone: normalizedPhone,
+        phoneHash,
         userAgent,
         details: { windowMs: ipCheck.limit.windowMs, max: ipCheck.limit.max },
       })
@@ -293,7 +336,7 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
         event: 'calc_blocked',
         reason: 'phone_rate_limit',
         ip,
-        phone: normalizedPhone,
+        phoneHash,
         userAgent,
         details: { windowMs: phoneCheck.limit.windowMs, max: phoneCheck.limit.max },
       })
@@ -307,22 +350,8 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
     )
     if (runtime.dedupStore.check(dedupKey, now)) {
       runtime.metrics.dedup += 1
-      server.log.info({ event: 'calc_dedup', reason: 'duplicate', ip, phone: normalizedPhone, userAgent })
+      server.log.info({ event: 'calc_dedup', reason: 'duplicate', ip, phoneHash, userAgent })
       reply.code(200).send(responsePayload)
-      return
-    }
-
-    const timestampValidation = validateCalcTimestamps({ openedAt, submittedAt, now })
-    if (!timestampValidation.valid) {
-      runtime.metrics.blocked += 1
-      server.log.info({
-        event: 'calc_blocked',
-        reason: timestampValidation.reason,
-        ip,
-        phone: normalizedPhone,
-        userAgent,
-      })
-      reply.code(400).send({ error: 'Invalid timing fields' })
       return
     }
 
@@ -398,7 +427,7 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
         event: 'calc_quarantine',
         reason: quarantineReasons.join(','),
         ip,
-        phone: normalizedPhone,
+        phoneHash,
         userAgent,
         details: {
           sent: result.ok,
@@ -416,7 +445,7 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
         event: 'calc_skipped',
         reason: 'missing_telegram_config',
         ip,
-        phone: normalizedPhone,
+        phoneHash,
         userAgent,
       })
       reply.code(200).send(responsePayload)
@@ -440,7 +469,7 @@ export const registerCostEstimateRoute = (server, config, runtime = createCostEs
     }
 
     runtime.metrics.sent += 1
-    server.log.info({ event: 'calc_sent', reason: 'ok', ip, phone: normalizedPhone, userAgent })
+    server.log.info({ event: 'calc_sent', reason: 'ok', ip, phoneHash, userAgent })
     reply.code(200).send(responsePayload)
   })
 
