@@ -246,4 +246,54 @@ describe('server modules', () => {
       restore()
     }
   })
+
+  it('rejects calculator requests with invalid timing fields before sending', async () => {
+    const requests = []
+    const restore = installFetchMock(async (url, options) => {
+      requests.push({
+        url,
+        body: JSON.parse(options.body),
+      })
+
+      return new Response('{}', {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+
+    const app = await createApp(createTestConfig())
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/cost-estimate',
+        payload: {
+          floors: 1,
+          area: 120,
+          packageType: 'gray',
+          name: 'Тестовый Пользователь',
+          phone: '+7 924 442-28-01',
+          consent: true,
+          website: '',
+          openedAt: Date.now(),
+          submittedAt: Date.now() - 10_000,
+          action: 'cost_estimate',
+        },
+      })
+
+      assert.equal(response.statusCode, 400)
+      assert.deepEqual(response.json(), { error: 'Invalid timing fields' })
+      assert.equal(requests.length, 0)
+
+      const health = await app.inject({
+        method: 'GET',
+        url: '/api/health',
+      })
+      assert.equal(health.json().calcMetrics.blocked, 1)
+      assert.equal(health.json().calcMetrics.dedup, 0)
+    } finally {
+      await app.close()
+      restore()
+    }
+  })
 })

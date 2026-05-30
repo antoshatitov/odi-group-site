@@ -22,8 +22,8 @@
 Корпоративный сайт строительной компании «ОДИ» (Калининград и область), это подтверждено в `README.md`.
 
 ### Функциональность фронтенда
-Лендинг с секциями про компанию, услуги, процесс, каталог проектов с фильтрами, галерея реализованных объектов, контакты и карта.  
-Есть модальные окна деталей проекта/галереи, формы заявок и калькулятор стоимости (см. `apps/web/src/pages/Home.tsx`, `apps/web/src/components`).
+Лендинг с секциями про компанию, услуги, процесс, галереи реализованных объектов/домов в продаже/проектов, контакты и карта.
+Есть модальные окна галереи, форма заявки, калькулятор стоимости и юридические страницы (см. `apps/web/src/pages/Home.tsx`, `apps/web/src/components`, `apps/web/src/sections`).
 
 ### Функциональность бэкенда
 API:
@@ -31,7 +31,7 @@ API:
 - `POST /api/cost-estimate` — расчёт стоимости
 - `GET  /api/health` — healthcheck
 
-Отправка сообщений в Telegram. Антиспам: honeypot, rate-limit, дедупликация, опциональная CAPTCHA (см. `apps/server/src/index.js` и связанные серверные модули).
+Отправка сообщений в Telegram. Антиспам: honeypot, rate-limit, дедупликация, timing-check, карантин подозрительных заявок калькулятора и опциональная CAPTCHA (см. `apps/server/src/app.js`, `apps/server/src/routes`, `apps/server/src/services`).
 
 ---
 
@@ -45,15 +45,17 @@ API:
 - React 18, Vite 6, TypeScript, React Router
 - код: `apps/web/src`
 - данные проектов/галереи: `apps/web/src/data`
-- стили: `apps/web/src/index.css`
+- стили: `apps/web/src/index.css` и `apps/web/src/styles`
+- media/performance scripts: `apps/web/scripts`, бюджеты: `apps/web/perf-budgets.json`
 
 ### Backend
 - Node.js 20+ (ESM), Fastify 5
 - `@fastify/cors`, `@fastify/helmet`, `@fastify/rate-limit`
-- вход: `apps/server/src/index.js`
+- вход: `apps/server/src/index.js`, сборка приложения: `apps/server/src/app.js`
+- маршруты: `apps/server/src/routes`; тесты: `apps/server/test/server.test.js`
 
 ### Deploy
-- Nginx и systemd конфиги: `deploy/`
+- generic Nginx/systemd/deploy templates: `deploy/`
 - переменные окружения: `.env.example`
 
 ---
@@ -119,10 +121,35 @@ Playwright MCP разрешён для UI checks и исследовательс
 - Agent browser health check: `npm run agent-browser:check`
 - Agent browser smoke: `npm run agent-browser:smoke`
 - Install Playwright browser (web): `npm run playwright:install:web`
+- Install Playwright browser for CI (workspace): `npm --workspace apps/web run playwright:install:ci`
 - UI smoke tests (web): `npm run test:e2e:web`
 - Analytics e2e tests (web): `npm run test:e2e:analytics:web`
 - Server tests: `npm run test:server`
 - Repo safety check: `npm run repo:safety`
+- Optimize media (workspace): `npm --workspace apps/web run media:optimize`
+- Check media budgets (workspace): `npm --workspace apps/web run media-check`
+- Check perf budgets (workspace): `npm --workspace apps/web run perf-check`
+
+### Workspace-level web scripts
+- Web dev: `npm --workspace apps/web run dev`
+- Web build: `npm --workspace apps/web run build`
+- Web lint: `npm --workspace apps/web run lint`
+- Web format: `npm --workspace apps/web run format`
+- Web preview: `npm --workspace apps/web run preview`
+- Web e2e smoke headed: `npm --workspace apps/web run e2e:smoke:headed`
+- Web e2e analytics headed: `npm --workspace apps/web run e2e:analytics:headed`
+
+### CI mirrors
+CI запускает:
+- `npm run repo:safety`
+- `npm run test:server`
+- `npm run lint:web`
+- `npm run build:web`
+- `npm --workspace apps/web run perf-check`
+- `npm --workspace apps/web run media-check`
+- `npm --workspace apps/web run playwright:install:ci`
+- `npm --workspace apps/web run e2e:smoke`
+- `npm --workspace apps/web run e2e:analytics`
 
 Правило: **не придумывай команды**. Если не уверен — проверь `package.json` и используй только существующие скрипты.
 
@@ -226,6 +253,7 @@ PR-описание должно включать все секции:
 - frontend без изменения поведения/layout: релевантный lint/build по ситуации
 - frontend UI/layout/интерактив: `npm run dev:web` + ручная/браузерная проверка затронутых сценариев
 - backend/API: `npm run test:server` и, если нужно, локальная проверка эндпоинтов
+- media/performance: `npm --workspace apps/web run media-check` и/или `npm --workspace apps/web run perf-check`
 - bug fix: добавить regression test, когда это естественно и не требует несоразмерной инфраструктуры
 - зависимости: использовать package manager проекта; не менять runtime/package manager без согласования
 
@@ -240,6 +268,7 @@ PR-описание должно включать все секции:
 - коммитить реальные значения токенов/ключей/`chat_id`/CAPTCHA-ключей
 - создавать и коммитить `.env` (если пользователь явно не попросил)
 - логировать ПДн, содержимое заявок, телефоны, адреса, токены
+- логировать телефон в явном виде; для технических корреляций использовать только короткий `phoneHash` через `hashValue(..., LOG_HASH_SALT)`
 
 Разрешено:
 - обновлять `.env.example` (документация) и использовать плейсхолдеры вида `YOUR_TELEGRAM_TOKEN_HERE`
@@ -254,6 +283,7 @@ PR-описание должно включать все секции:
 - валидировать входные данные на границе (до бизнес-логики)
 - сохранять контракт эндпоинтов, если не согласовано изменение
 - не раскрывать подробные внутренние ошибки клиенту
+- сохранять порядок антиспама калькулятора: schema/consent/phone/honeypot/CAPTCHA/timing → rate-limit/dedup/quarantine/send; не записывать невалидные timing-запросы как нормальные дубликаты
 
 ### 8.3 Deploy и инфраструктура (`deploy/`)
 Файлы `deploy/` менять **только** если задача прямо про деплой/инфраструктуру.  
@@ -286,7 +316,7 @@ PR-описание должно включать все секции:
 
 Сценарии по области:
 - лендинг: загрузка страницы, ключевые секции на месте
-- каталог проектов: фильтры, список, карточки
+- галереи: реализованные объекты, дома в продаже, проекты, карточки
 - галерея: открытие/перелистывание, корректные изображения
 - модалки проекта/галереи: открытие/закрытие/скролл/ESC/focus
 - формы заявок: валидация, loading/success/error без реальной отправки, если задача не требует отправки

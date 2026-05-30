@@ -6,6 +6,12 @@ const trackedFiles = execFileSync('git', ['ls-files', '-z'], {
 })
   .split('\0')
   .filter(Boolean)
+const untrackedFiles = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
+  encoding: 'utf8',
+})
+  .split('\0')
+  .filter(Boolean)
+const repositoryFiles = [...trackedFiles, ...untrackedFiles]
 
 const issues = new Set()
 const allowedTopLevelSkills = new Set([
@@ -16,17 +22,22 @@ const allowedTopLevelSkills = new Set([
   'web-design-guidelines',
 ])
 
-if (fs.existsSync('skills-lock.json')) {
+if (repositoryFiles.includes('skills-lock.json')) {
   issues.add('skills-lock.json: skills-lock.json is forbidden in the public repository')
 }
 
-if (fs.existsSync('.agents/skills')) {
-  for (const entry of fs.readdirSync('.agents/skills', { withFileTypes: true })) {
-    if (!allowedTopLevelSkills.has(entry.name)) {
-      issues.add(
-        `.agents/skills/${entry.name}: unexpected top-level entry in .agents/skills`,
-      )
-    }
+const topLevelSkills = new Set(
+  repositoryFiles
+    .filter((filePath) => filePath.startsWith('.agents/skills/'))
+    .map((filePath) => filePath.split('/')[2])
+    .filter(Boolean),
+)
+
+for (const skillName of topLevelSkills) {
+  if (!allowedTopLevelSkills.has(skillName)) {
+    issues.add(
+      `.agents/skills/${skillName}: unexpected top-level entry in .agents/skills`,
+    )
   }
 }
 
