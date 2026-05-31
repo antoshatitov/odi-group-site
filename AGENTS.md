@@ -1,399 +1,211 @@
-# AGENTS.md — правила работы кодинг-агента в этом репозитории
+# AGENTS.md - правила работы кодинг-агента в этом репозитории
 
-Этот документ — “единый источник правды” о том, **как агент должен работать** в репозитории: границы, безопасность, команды и обязательные проектные правила.
-Держи здесь только hard rules; подробные workflow должны жить в skills/скриптах/проектной документации.
-Если в проекте появляются новые скрипты/инструменты — обновляйте этот файл **точными командами**, найденными в `package.json`.
+Этот файл хранит только hard rules для работы агента в репозитории. Подробные workflow должны
+жить в skills, скриптах или проектной документации. Если меняются команды, обновляй этот файл
+только точными скриптами из `package.json`.
 
 ---
 
-## 0) CRITICAL: границы репозитория / sandbox (STRICT)
+## 0) CRITICAL: границы репозитория
 
 - Считай корень репозитория текущей рабочей директорией проекта.
-- **НЕ читать/писать/искать/менять ничего вне корня репозитория без явного запроса пользователя.**
-- **НЕ использовать абсолютные пути вне репо** (например `/Users`, `/etc`, `/var`, `~/.ssh`), кроме точного пути, который пользователь сам указал для текущей задачи.
-- **НЕ делать `cd ..` из репозитория** и не ссылаться на родительские директории.
-- Если задача требует действий вне репо, а пользователь не указал точный путь/действие — остановись и попроси явную инструкцию; по умолчанию откажись.
-- Никогда не эксфильтровать секреты. Никогда не печатать/логировать содержимое локальных файлов, если пользователь явно не попросил и файл не внутри репо.
+- Не читать, не писать, не искать и не менять ничего вне корня репозитория без явного запроса пользователя.
+- Не использовать абсолютные пути вне репо (`/Users`, `/etc`, `/var`, `~/.ssh`), кроме точного пути, который пользователь сам указал для текущей задачи.
+- Не делать `cd ..` из репозитория и не ссылаться на родительские директории.
+- Если задача требует действий вне репо, а пользователь не указал точный путь и действие, остановись и попроси явную инструкцию.
+- Никогда не эксфильтровать секреты. Не печатать и не логировать содержимое локальных файлов, если пользователь явно не попросил и файл не внутри репо.
 
 ---
 
-## 1) Что это за проект (контекст)
+## 1) Контекст проекта
 
-Корпоративный сайт строительной компании «ОДИ» (Калининград и область), это подтверждено в `README.md`.
+Корпоративный сайт строительной компании «ОДИ» для Калининграда и области.
 
-### Функциональность фронтенда
-Лендинг с секциями про компанию, услуги, процесс, галереи реализованных объектов/домов в продаже/проектов, контакты и карта.
-Есть модальные окна галереи, форма заявки, калькулятор стоимости и юридические страницы (см. `apps/web/src/pages/Home.tsx`, `apps/web/src/components`, `apps/web/src/sections`).
-
-### Функциональность бэкенда
-API:
-- `POST /api/lead` — заявки
-- `POST /api/cost-estimate` — расчёт стоимости
-- `GET  /api/health` — healthcheck
-
-Отправка сообщений в Telegram. Антиспам: honeypot, rate-limit, дедупликация, timing-check, карантин подозрительных заявок калькулятора и опциональная CAPTCHA (см. `apps/server/src/app.js`, `apps/server/src/routes`, `apps/server/src/services`).
+- Frontend: React 18, Vite 6, TypeScript, React Router; код в `apps/web/src`.
+- UI: лендинг, галереи реализованных объектов/домов в продаже/проектов, контакты, карта, модалки галереи, форма заявки, калькулятор стоимости, юридические страницы.
+- Backend: Node.js 20+, Fastify 5; вход `apps/server/src/index.js`, приложение `apps/server/src/app.js`, маршруты `apps/server/src/routes`.
+- API: `POST /api/lead`, `POST /api/cost-estimate`, `GET /api/health`.
+- Данные галерей: `apps/web/src/data`; стили: `apps/web/src/index.css` и `apps/web/src/styles`.
+- Deploy-шаблоны: `deploy/`; переменные окружения: `.env.example`.
 
 ---
 
-## 2) Структура и стек
+## 2) Skills
 
-### Monorepo
-- npm workspaces
-- корневые скрипты в `package.json`
+Если задача относится к области, покрытой skill, открой соответствующий `SKILL.md` и следуй ему.
+Если нужного skill нет, работай по этому файлу.
 
-### Frontend
-- React 18, Vite 6, TypeScript, React Router
-- код: `apps/web/src`
-- данные проектов/галереи: `apps/web/src/data`
-- стили: `apps/web/src/index.css` и `apps/web/src/styles`
-- media/performance scripts: `apps/web/scripts`, бюджеты: `apps/web/perf-budgets.json`
+- `frontend-responsive-ui` - адаптивная верстка и responsive-поведение.
+- `web-design-guidelines` - UI/UX и accessibility review.
+- `vercel-react-best-practices` - React performance, bundle size, render patterns.
+- `agent-browser` - browser automation, UI checks, скриншоты, интерактивные проверки.
+- `frontend-design` - production-grade визуальный дизайн интерфейсов.
 
-### Backend
-- Node.js 20+ (ESM), Fastify 5
-- `@fastify/cors`, `@fastify/helmet`, `@fastify/rate-limit`
-- вход: `apps/server/src/index.js`, сборка приложения: `apps/server/src/app.js`
-- маршруты: `apps/server/src/routes`; тесты: `apps/server/test/server.test.js`
-
-### Deploy
-- generic Nginx/systemd/deploy templates: `deploy/`
-- переменные окружения: `.env.example`
+Если PR добавляет или удаляет tracked skills в `.agents/skills/`, обнови эту карту в том же PR.
 
 ---
 
-## 3) Skills (routing)
+## 3) Точные команды проекта
 
-Skills — источник подробных workflow. В этом файле держим только короткую карту применения.
+Не придумывай команды. Если не уверен, проверь `package.json`.
 
-Основные локальные skills:
-- `frontend-responsive-ui`
-- `web-design-guidelines`
-- `vercel-react-best-practices`
-- `agent-browser`
-- `frontend-design`
+### Root commands
 
-Правило:
-- Если задача относится к области, покрытой skill — открой и следуй его `SKILL.md`.
-- Если нужного skill нет — работай по правилам этого `AGENTS.md`.
-- Не обновляй этот раздел только из-за “обнаружения” нового skill.
-
-Карта применения:
-- `frontend-responsive-ui` — адаптивные интерфейсы, mobile-first layout, responsive-поведение.
-- `web-design-guidelines` — review UI/UX и accessibility по web interface guidelines.
-- `vercel-react-best-practices` — review и реализация React-паттернов с упором на performance.
-- `agent-browser` — browser automation, UI checks, скриншоты, интерактивная проверка страниц.
-- `frontend-design` — дизайн и реализация визуально сильных production-grade интерфейсов.
-
-Если в PR добавляются/удаляются skills (меняется папка `.agents/skills/`) — обнови карту применения в рамках того же PR.
-
----
-
-## 4) Playwright MCP (ALLOWED) — для UI-проверок
-
-Playwright MCP разрешён для UI checks и исследовательского тестирования.
-
-Разрешено:
-- открывать страницы и проверять layout/адаптив/визуальные регрессии
-- скриншоты, DOM inspection, проверка интеракций (модалки, фильтры, навигация)
-- использовать как для текущего сайта в dev, так и для референсов (если нужно)
-
-Ограничения безопасности:
-- **Только read-only browsing**: не совершать покупок/скачиваний исполняемых файлов/изменений аккаунтов.
-- **Никогда не вводить креды/токены/персональные данные** на любых сайтах.
-- **Не отправлять формы**, которые могут триггерить реальные действия (заявка/Telegram) — если задача не требует этого явно.
-  - Для проверок предпочтительно: UI-валидация, мок/локальный режим, тестовый эндпоинт/флаг (если предусмотрен).
-- Если в MCP есть allowlist хостов (например `--allowed-hosts`) — ограничь только нужными хостами.
-
----
-
-## 5) Команды сборки/линта/дев-режима (используй реальные скрипты)
-
-Инструменты: ESLint, Prettier, TypeScript, `@vitejs/plugin-react`.
-
-### Основные команды (актуализируй по `package.json`)
 - Установка зависимостей: `npm install`
-- Dev (frontend): `npm run dev:web`
-- Build (frontend): `npm run build:web`
-- Lint (frontend): `npm run lint:web`
-- Format (frontend): `npm run format:web`
-- Preview (frontend): `npm run preview:web`
-- Dev (server): `npm run dev:server` (если присутствует)
-- Start (server): `npm run start:server` (если присутствует)
-- Agent browser health check: `npm run agent-browser:check`
-- Agent browser smoke: `npm run agent-browser:smoke`
-- Install Playwright browser (web): `npm run playwright:install:web`
-- Install Playwright browser for CI (workspace): `npm --workspace apps/web run playwright:install:ci`
-- UI smoke tests (web): `npm run test:e2e:web`
-- Analytics e2e tests (web): `npm run test:e2e:analytics:web`
+- Dev frontend: `npm run dev:web`
+- Build frontend: `npm run build:web`
+- Lint frontend: `npm run lint:web`
+- Format frontend: `npm run format:web`
+- Preview frontend: `npm run preview:web`
+- Dev server: `npm run dev:server`
+- Start server: `npm run start:server`
 - Server tests: `npm run test:server`
-- Repo safety check: `npm run repo:safety`
-- Optimize media (workspace): `npm --workspace apps/web run media:optimize`
-- Check media budgets (workspace): `npm --workspace apps/web run media-check`
-- Check perf budgets (workspace): `npm --workspace apps/web run perf-check`
+- Repo safety: `npm run repo:safety`
+- Agent browser check: `npm run agent-browser:check`
+- Agent browser smoke: `npm run agent-browser:smoke`
+- Install Playwright browser: `npm run playwright:install:web`
+- UI smoke tests: `npm run test:e2e:web`
+- Analytics e2e tests: `npm run test:e2e:analytics:web`
 
-### Workspace-level web scripts
+### Workspace commands
+
 - Web dev: `npm --workspace apps/web run dev`
 - Web build: `npm --workspace apps/web run build`
 - Web lint: `npm --workspace apps/web run lint`
 - Web format: `npm --workspace apps/web run format`
 - Web preview: `npm --workspace apps/web run preview`
+- Optimize media: `npm --workspace apps/web run media:optimize`
+- Check media budgets: `npm --workspace apps/web run media-check`
+- Check perf budgets: `npm --workspace apps/web run perf-check`
+- Install Playwright browser for CI: `npm --workspace apps/web run playwright:install:ci`
 - Web e2e smoke headed: `npm --workspace apps/web run e2e:smoke:headed`
 - Web e2e analytics headed: `npm --workspace apps/web run e2e:analytics:headed`
 
 ### CI mirrors
-CI запускает:
-- `npm run repo:safety`
-- `npm run test:server`
-- `npm run lint:web`
-- `npm run build:web`
-- `npm --workspace apps/web run perf-check`
-- `npm --workspace apps/web run media-check`
-- `npm --workspace apps/web run playwright:install:ci`
-- `npm --workspace apps/web run e2e:smoke`
-- `npm --workspace apps/web run e2e:analytics`
 
-Правило: **не придумывай команды**. Если не уверен — проверь `package.json` и используй только существующие скрипты.
+CI запускает `npm run repo:safety`, `npm run test:server`, `npm run lint:web`,
+`npm run build:web`, `npm --workspace apps/web run perf-check`,
+`npm --workspace apps/web run media-check`,
+`npm --workspace apps/web run playwright:install:ci`,
+`npm --workspace apps/web run e2e:smoke` и
+`npm --workspace apps/web run e2e:analytics`.
 
 ---
 
-## 6) Рабочий процесс “1 задача = 1 PR” (когда пользователь просит публикацию)
+## 4) Выполнение задач и проверки
 
-Работай в рамках одной задачи и не смешивай разные темы/рефакторинги/апдейты.  
-Commit, push и PR выполняются только когда пользователь явно попросил commit/push/PR или публикацию изменений.
+- Перед правками пойми цель, затронутую область и риск.
+- Меняй минимально и строго по задаче. Не смешивай независимые темы и рефакторинги.
+- Для нетривиальных задач, UI/API/security/deploy-изменений, PR или явного запроса пользователя сначала дай короткий план.
+- В конце кратко укажи, что изменено и чем проверено.
+- Если проверку нельзя выполнить, явно укажи причину и остаточный риск.
 
-### 6.1 Branch Naming (Agent-generated)
-Агент генерирует имя ветки автоматически, если пользователь не задал имя явно.
+Risk-based verification:
 
-Разрешённые префиксы веток:
-- `feat/...` — new features
-- `fix/...` — bug fixes
-- `chore/...` — maintenance/tooling
-- `refactor/...` — non-functional improvements
-- `docs/...` — documentation only
-- `test/...` — tests only
-
-Правила:
-- `kebab-case`
-- коротко и по сути
-- без пробелов
-- не использовать `:` в имени ветки (в Git это недопустимый формат для branch naming policy)
-
-Примеры:
-- `fix/modal-scroll-lock`
-- `feat/calculator-validation`
-- `chore/update-eslint-config`
-
-### 6.2 Commits (Conventional Commits)
-Использовать Conventional Commits:
-- `feat: ...`
-- `fix: ...`
-- `chore: ...`
-- `refactor: ...`
-- `docs: ...`
-- `test: ...`
-
-Требования к subject:
-- до 72 символов
-- повелительное наклонение
-- body опционален (добавлять, если «почему» не очевидно)
-
-Коммиты должны быть небольшими и логичными. Избегай `wip` в финале (в процессе — по возможности тоже избегать).
-
-**STRICT: No AI attribution footers**
-Никогда не добавлять:
-- `Co-Authored-By: Codex`
-- `Generated with Codex`
-- `Generated with...`
-- любые аналогичные AI-attribution подписи в commit/PR/issues/docs/выводах
-
-### 6.3 The only allowed change flow
-Когда изменения готовы и пользователь явно попросил commit/push/PR:
-1) убедиться, что текущая ветка **не** `main`;
-2) создать новую ветку (agent-generated name), если нужно;
-3) выполнить commit в эту ветку;
-4) выполнить push этой ветки;
-5) открыть PR.
-
-Одна задача → одна ветка → один PR.
-
-Запрещено пушить в `main` при любом сценарии работы агента.
-
-### 6.4 PR Requirements (Mandatory)
-PR-описание должно включать все секции:
-- **Summary** — что изменено (bullets)
-- **Why** — мотивация/ожидаемое поведение
-- **Changes** — ключевые файлы/модули и что сделано
-- **How to test** — точные команды и/или ручные шаги + ожидаемый результат
-- **Verification** — что из lint/typecheck/tests/build запущено; если не запускалось, почему
-- **Screenshots / Video** — для UI-изменений
-- **Risk & Rollback** — уровень риска и безопасный способ отката
-
-Агент сначала показывает PR summary в чате, затем создаёт PR и после этого публикует ссылку на PR.
-
-### 6.5 Merging
-- Агент не выполняет merge без отдельной явной команды пользователя.
-- Перед merge агент обязан проверить статус CI и целевую ветку PR.
-- Запрещено мержить PR с падающим/незавершённым CI, если пользователь явно не подтвердил исключение.
-- Запрещено выполнять merge в `main` локально или пушить напрямую в `main`.
+- Docs-only: dev-сервер не нужен.
+- Frontend без изменения поведения/layout: `npm run lint:web` и/или `npm run build:web` по ситуации.
+- Frontend UI/layout/интерактив: `npm run dev:web` плюс browser/manual проверка затронутых сценариев.
+- Backend/API: `npm run test:server` и, если нужно, локальная проверка эндпоинтов.
+- Media/performance: `npm --workspace apps/web run media-check` и/или `npm --workspace apps/web run perf-check`.
+- Bug fix: добавь regression test, когда это естественно и не требует несоразмерной инфраструктуры.
+- Dependencies: не менять package manager/runtime; новую зависимость добавлять только если без нее нельзя.
 
 ---
 
-## 7) Процесс выполнения задачи (risk-based)
+## 5) Безопасность и проектные запреты
 
-Обязательное для всех задач:
-- понять цель и затронутую область до правок
-- менять минимально и по теме
-- не смешивать независимые рефакторинги/улучшения
-- в конце кратко указать, что изменено и чем проверено
+### Секреты и персональные данные
 
-План до правок нужен, если задача нетривиальная, затрагивает UI/API/безопасность/деплой, требует PR, или пользователь явно просит план.
-Для маленьких docs/copy/config-правок достаточно коротко назвать намерение перед изменением.
-
-Самопроверка выбирается по риску:
-- docs-only: dev-сервер не нужен
-- frontend без изменения поведения/layout: релевантный lint/build по ситуации
-- frontend UI/layout/интерактив: `npm run dev:web` + ручная/браузерная проверка затронутых сценариев
-- backend/API: `npm run test:server` и, если нужно, локальная проверка эндпоинтов
-- media/performance: `npm --workspace apps/web run media-check` и/или `npm --workspace apps/web run perf-check`
-- bug fix: добавить regression test, когда это естественно и не требует несоразмерной инфраструктуры
-- зависимости: использовать package manager проекта; не менять runtime/package manager без согласования
-
-Если проверку нельзя выполнить — явно указать причину и остаточный риск.
-
----
-
-## 8) Границы и правила безопасности (проект-специфично, строго)
-
-### 8.1 Секреты, токены, персональные данные
 Запрещено:
-- коммитить реальные значения токенов/ключей/`chat_id`/CAPTCHA-ключей
-- создавать и коммитить `.env` (если пользователь явно не попросил)
-- логировать ПДн, содержимое заявок, телефоны, адреса, токены
-- логировать телефон в явном виде; для технических корреляций использовать только короткий `phoneHash` через `hashValue(..., LOG_HASH_SALT)`
 
-Разрешено:
-- обновлять `.env.example` (документация) и использовать плейсхолдеры вида `YOUR_TELEGRAM_TOKEN_HERE`
+- Коммитить реальные токены, ключи, `chat_id`, CAPTCHA-секреты.
+- Создавать и коммитить `.env`, если пользователь явно не попросил.
+- Логировать ПДн, содержимое заявок, телефоны, адреса, токены.
+- Логировать телефон в явном виде; для технической корреляции используй только короткий `phoneHash` через `hashValue(..., LOG_HASH_SALT)`.
 
-### 8.2 API/безопасность сервера
+Разрешено обновлять `.env.example` только безопасными плейсхолдерами.
+
+### API/server
+
 Запрещено без явного запроса:
-- ослаблять/отключать `@fastify/helmet`, `@fastify/rate-limit`, антиспам-механики (honeypot/дедупликация)
-- расширять CORS “всем всё можно”, если задача этого прямо не требует
-- выдавать наружу стеки/секреты в ошибках и логах
 
-Обязательно при правках API:
-- валидировать входные данные на границе (до бизнес-логики)
-- сохранять контракт эндпоинтов, если не согласовано изменение
-- не раскрывать подробные внутренние ошибки клиенту
-- сохранять порядок антиспама калькулятора: schema/consent/phone/honeypot/CAPTCHA/timing → rate-limit/dedup/quarantine/send; не записывать невалидные timing-запросы как нормальные дубликаты
+- Ослаблять или отключать `@fastify/helmet`, `@fastify/rate-limit`, honeypot, дедупликацию, timing-check, quarantine flow или CAPTCHA.
+- Расширять CORS до “всем все можно”.
+- Раскрывать наружу стеки, секреты и внутренние ошибки.
 
-### 8.3 Deploy и инфраструктура (`deploy/`)
-Файлы `deploy/` менять **только** если задача прямо про деплой/инфраструктуру.  
-Запрещено “по пути” менять nginx/systemd, порты, users, пути, перезапуски.
+При правках API обязательно:
 
-### 8.4 Зависимости
-Запрещено без явного запроса:
-- массово обновлять версии зависимостей
-- добавлять новую зависимость “для удобства”
-- менять `package-lock.json` без причины
-- менять package manager/runtime проекта
+- Валидировать входные данные на границе.
+- Сохранять контракт эндпоинтов, если изменение контракта не согласовано.
+- Для калькулятора сохранять порядок антиспама: schema/consent/phone/honeypot/CAPTCHA/timing -> rate-limit/dedup/quarantine/send.
+- Не записывать невалидные timing-запросы как нормальные дубликаты.
 
-Если зависимость всё же нужна:
-- объяснить зачем без неё нельзя
-- выбрать минимальную альтернативу
-- быстро проверить здоровье пакета: свежесть релизов/коммитов, adoption, maintenance-сигналы
-- зафиксировать, как это влияет на сборку/команды/безопасность
+### Deploy, зависимости и frontend
 
-### 8.5 Фронтенд-ограничения (качество продукта)
-- Не ломать ключевые секции лендинга и SEO-контент.
-- Не ухудшать доступность: корректный focus, закрытие модалок (ESC/оверлей), навигация с клавиатуры (если реализовано).
-- Не добавлять тяжёлые библиотеки ради мелких UI-эффектов.
+- `deploy/` менять только для задач про deploy/infra.
+- Не менять nginx/systemd, порты, users, пути и перезапуски “по пути”.
+- Не обновлять массово зависимости и не менять `package-lock.json` без причины.
+- Не ломать ключевые секции лендинга, SEO-контент и доступность: focus, ESC/overlay для модалок, клавиатурная навигация.
+- Не добавлять тяжелые библиотеки ради мелких UI-эффектов.
 
 ---
 
-## 9) UI regression checklist (scoped)
+## 6) UI/browser checks
 
-Для UI-задач проверять только затронутые области + базовый smoke лендинга.
-Полный чеклист нужен, если изменение влияет на общую разметку, навигацию, данные проектов/галереи, формы, модалки или глобальные стили.
+Playwright/agent-browser разрешены для read-only UI checks и исследовательского тестирования.
 
-Сценарии по области:
-- лендинг: загрузка страницы, ключевые секции на месте
-- галереи: реализованные объекты, дома в продаже, проекты, карточки
-- галерея: открытие/перелистывание, корректные изображения
-- модалки проекта/галереи: открытие/закрытие/скролл/ESC/focus
-- формы заявок: валидация, loading/success/error без реальной отправки, если задача не требует отправки
-- калькулятор стоимости: базовый сценарий ввода и расчёта
-- адаптив: релевантные mobile/tablet/desktop брейкпоинты
+- Не совершать покупки, скачивания исполняемых файлов и изменения аккаунтов.
+- Не вводить креды, токены и персональные данные.
+- Не отправлять формы, которые могут триггерить реальные заявки или Telegram, если задача не требует этого явно.
+- Для форм предпочитай UI-валидацию, мок/локальный режим или тестовый endpoint/flag.
 
----
+Scoped checklist:
 
-## 10) Код-стайл и конвенции
-
-### Imports
-- Предпочитай абсолютные импорты, если проект это поддерживает.
-- Группируй импорты: standard lib → third-party → local.
-- 1 пустая строка между группами.
-- Не оставляй неиспользуемые импорты.
-
-### Formatting
-- Длина строки: до 100 символов (если инструмент не задаёт иначе).
-- Отступы: 2 пробела для JS/TS/JSON/YAML/Markdown-код-блоков.
-- Предпочитай trailing commas, где поддерживается.
-- Prettier (ориентир): `printWidth 100`, `singleQuote true`, `trailingComma all`, `semi false`.
-- Используй ESM там, где это принятая конвенция проекта (`type: module`).
-
-### TypeScript
-- Явные типы на границах модулей и публичных API.
-- Не использовать `any`; вместо него `unknown` + narrowing.
-- Типы держать рядом с использованием, переиспользуемые вынести аккуратно.
-
-### Error handling & logging
-- Guard clauses и ранние возвраты — предпочтительнее глубокой вложенности.
-- Не глотать ошибки молча.
-- Логи — только полезные, без секретов и ПДн.
-
-### Implementation defaults
-- Перед кодом читать релевантные README/документацию проекта, если задача не очевидна.
-- Для bug fix добавлять regression test, когда это естественно.
-- Предпочитать чистую ограниченную правку вместо хрупкого shim, если это не расширяет scope.
-- Не делать repo-wide search/replace скрипты без явной необходимости; правки должны быть маленькими и reviewable.
-- Комментарии в коде — только для tricky/bug-prone логики.
-
-### Документация
-- Если добавлены новые команды/переменные окружения или изменилось user-visible поведение — обновить README/`.env.example`/документацию.
+- Лендинг: загрузка страницы, ключевые секции на месте.
+- Галереи: карточки, изображения, открытие/закрытие, перелистывание, ESC/focus.
+- Формы: валидация, loading/success/error без реальной отправки.
+- Калькулятор: базовый сценарий ввода и расчета.
+- Адаптив: релевантные mobile/tablet/desktop брейкпоинты.
 
 ---
 
-## 11) Repo discovery checklist (когда появляются новые файлы/инструменты)
+## 7) PR, commit, push и merge
 
-- Проверить build/test конфиги: `package.json`, `tsconfig*`, конфиги ESLint/Prettier, CI workflow.
-- Зафиксировать точные команды build/lint/format/test (в разделе 5).
-- Узнать single-test флаги, если добавятся тесты, и записать явно.
-- Зафиксировать требования к runtime/engines (Node и т.д.), если они меняются.
-- Учесть внешние сервисы/переменные окружения и описать через `.env.example`.
+Commit, push, PR и merge выполняются только по явному запросу пользователя.
+
+- Одна задача -> одна ветка -> один PR.
+- Запрещено пушить напрямую в `main`.
+- Перед commit/push/PR убедись, что текущая ветка не `main`; создай новую ветку, если нужно.
+- Agent-generated branch names: `feat/...`, `fix/...`, `chore/...`, `refactor/...`, `docs/...`, `test/...`; kebab-case, коротко, без `:`.
+- Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`), subject до 72 символов.
+- Никогда не добавлять AI attribution footers: `Co-Authored-By: Codex`, `Generated with Codex`, `Generated with...` и аналоги.
+
+PR description must include:
+
+- **Summary**
+- **Why**
+- **Changes**
+- **How to test**
+- **Verification**
+- **Screenshots / Video** для UI-изменений
+- **Risk & Rollback**
+
+Merge rules:
+
+- Не выполнять merge без отдельной явной команды пользователя.
+- Перед merge проверить CI, целевую ветку и актуальный head PR.
+- Не мержить PR с падающим или незавершенным CI без явного подтверждения пользователя.
+- Не выполнять локальный merge в `main` и не пушить в `main`.
 
 ---
 
-## 12) Workspace hygiene
+## 8) Workspace hygiene
 
 - Безопасные git-команды по умолчанию: `git status`, `git diff`, `git log`.
-- Branch switch/checkout — только когда это нужно задаче и не конфликтует с правилами репозитория.
-- Push/commit/PR — только по явному запросу пользователя.
-- `git amend` — только по явному запросу.
-- `git worktree` — не использовать без запроса; если текущая ветка/грязное состояние мешают, спросить пользователя.
-- Незнакомые изменения в рабочем дереве считать пользовательскими/чужими; не откатывать, работать вокруг них.
-- Не удалять файлы/изменения без явного запроса.
-- Избегать разрушительных команд (`rm -rf`, дисковые операции, privilege escalation).
-- Избегать разрушительных git-команд.
-- Правки — минимальные и строго по задаче.
-- Всегда работать **внутри repo root** (см. sandbox правила).
-
----
-
-## 13) Быстрый чеклист перед “готово”
-
-- [ ] Для нетривиальных/рискованных задач план опубликован до изменений
-- [ ] Изменения минимальны и по задаче (не смешано несколько тем)
-- [ ] Нет секретов/ключей/ПДн в коде и логах
-- [ ] Для frontend/UI-задач выполнена scoped проверка затронутых сценариев
-- [ ] Для backend/API-задач `npm run test:server` проходит или причина пропуска зафиксирована
-- [ ] Релевантные lint/typecheck/build/test команды пройдены или причина пропуска зафиксирована
-- [ ] Итоговый отчёт: “что изменено и как проверить” готов
+- Незнакомые изменения в рабочем дереве считать пользовательскими или чужими; не откатывать.
+- Если чужие изменения мешают задаче, спроси пользователя.
+- Не удалять файлы и изменения без явного запроса.
+- Не использовать destructive commands (`rm -rf`, `git reset --hard`, `git checkout --`) без явного запроса.
+- `git amend` и `git worktree` использовать только по явному запросу.
+- Правки должны быть маленькими, reviewable и по теме.
+- Всегда работать внутри repo root.
