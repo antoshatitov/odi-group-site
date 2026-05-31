@@ -215,8 +215,17 @@
 }
 
 .hero-actions {
+  --contact-menu-accent: var(--color-ink-800);
+  --contact-button-height: 3.9rem;
+  --contact-menu-reserve: 8rem;
+  --dropdown-open-dur: 250ms;
+  --dropdown-close-dur: 150ms;
+  --dropdown-pre-scale: 0.97;
+  --dropdown-closing-scale: 0.99;
+  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--space-3);
   margin-top: var(--space-2);
 }
@@ -225,11 +234,17 @@
   position: relative;
   display: inline-flex;
   z-index: 6;
+  transition: padding-bottom var(--dropdown-close-dur) var(--dropdown-ease);
+}
+
+.hero-contact[data-open='true'] {
+  padding-bottom: var(--contact-menu-reserve);
+  transition-duration: var(--dropdown-open-dur);
 }
 
 .contact-menu {
   position: absolute;
-  top: calc(100% + var(--space-2));
+  top: calc(var(--contact-button-height) + var(--space-2));
   left: 0;
   z-index: 5;
   display: grid;
@@ -237,15 +252,58 @@
   gap: var(--space-2);
   width: min(24rem, calc(100vw - 2.4rem));
   padding: var(--space-2);
-  border: 1px solid rgba(18, 25, 23, 0.1);
+  border: 1px solid var(--contact-menu-accent);
   border-radius: var(--radius-m);
   background: rgba(248, 246, 241, 0.96);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(12px);
+  color: var(--contact-menu-accent);
 }
 
-.contact-menu[hidden] {
-  display: none;
+.t-dropdown {
+  transform-origin: top left;
+  transform: scale(var(--dropdown-pre-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-open-dur) var(--dropdown-ease),
+    opacity var(--dropdown-open-dur) var(--dropdown-ease);
+  will-change: transform, opacity;
+}
+
+.t-dropdown[data-origin='top-right'] {
+  transform-origin: top right;
+}
+
+.t-dropdown[data-origin='top-center'] {
+  transform-origin: top center;
+}
+
+.t-dropdown[data-origin='bottom-left'] {
+  transform-origin: bottom left;
+}
+
+.t-dropdown[data-origin='bottom-center'] {
+  transform-origin: bottom center;
+}
+
+.t-dropdown[data-origin='bottom-right'] {
+  transform-origin: bottom right;
+}
+
+.t-dropdown.is-open {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.t-dropdown.is-closing {
+  transform: scale(var(--dropdown-closing-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-close-dur) var(--dropdown-ease),
+    opacity var(--dropdown-close-dur) var(--dropdown-ease);
 }
 
 .contact-menu-link {
@@ -257,7 +315,7 @@
   min-height: 3rem;
   padding: 0.68rem 0.75rem;
   border-radius: var(--radius-s);
-  color: var(--color-ink-800);
+  color: var(--contact-menu-accent);
   font-size: var(--text-sm);
   font-weight: 600;
   transition:
@@ -268,7 +326,7 @@
 
 .contact-menu-link:hover {
   background: rgba(31, 95, 83, 0.09);
-  color: var(--color-moss-700);
+  color: var(--contact-menu-accent);
   transform: translateY(-1px);
 }
 
@@ -283,6 +341,13 @@
   display: block;
   color: currentColor;
   fill: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-contact,
+  .t-dropdown {
+    transition: none !important;
+  }
 }
 
 .hero-stats {
@@ -1309,6 +1374,11 @@
     flex-direction: column;
   }
 
+  .hero-contact[data-open='true'],
+  .hero-contact[data-closing='true'] {
+    padding-bottom: 0;
+  }
+
   .hero-contact .contact-menu {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1316,6 +1386,45 @@
     min-width: 0;
     margin-top: var(--space-2);
     padding: var(--space-2);
+    overflow: hidden;
+    max-height: 0;
+    transition:
+      max-height var(--dropdown-close-dur) var(--dropdown-ease),
+      margin-top var(--dropdown-close-dur) var(--dropdown-ease),
+      padding var(--dropdown-close-dur) var(--dropdown-ease),
+      transform var(--dropdown-close-dur) var(--dropdown-ease),
+      opacity var(--dropdown-close-dur) var(--dropdown-ease);
+  }
+
+  .hero-contact .contact-menu:not(.is-open):not(.is-closing) {
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+  }
+
+  .hero-contact .contact-menu.is-open {
+    max-height: 14rem;
+    transition:
+      max-height var(--dropdown-open-dur) var(--dropdown-ease),
+      margin-top var(--dropdown-open-dur) var(--dropdown-ease),
+      padding var(--dropdown-open-dur) var(--dropdown-ease),
+      transform var(--dropdown-open-dur) var(--dropdown-ease),
+      opacity var(--dropdown-open-dur) var(--dropdown-ease);
+  }
+
+  .hero-contact .contact-menu.is-closing {
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+    max-height: 0;
+    transition:
+      max-height var(--dropdown-close-dur) var(--dropdown-ease),
+      margin-top var(--dropdown-close-dur) var(--dropdown-ease),
+      padding var(--dropdown-close-dur) var(--dropdown-ease),
+      transform var(--dropdown-close-dur) var(--dropdown-ease),
+      opacity var(--dropdown-close-dur) var(--dropdown-ease);
   }
 
   .hero-contact .contact-menu-link {

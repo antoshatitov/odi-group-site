@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import Button from '../components/Button'
 import ContactIcon from '../components/ContactIcon'
@@ -16,6 +16,7 @@ type ConnectionInfo = {
 }
 
 const contactMenuId = 'hero-contact-menu'
+const contactMenuCloseDurationMs = 150
 const rollingDigits = Array.from({ length: 10 }, (_, index) => String(index))
 
 type HeroStat = {
@@ -135,7 +136,35 @@ const RollingStatValue = ({ value }: { value: string }) => (
 const HeroSection = () => {
   const [allowAutoplay, setAllowAutoplay] = useState(shouldAutoplayHero)
   const [isContactMenuOpen, setIsContactMenuOpen] = useState(false)
+  const [isContactMenuClosing, setIsContactMenuClosing] = useState(false)
   const contactMenuRef = useRef<HTMLDivElement | null>(null)
+  const contactMenuCloseTimeoutRef = useRef<number | null>(null)
+
+  const openContactMenu = useCallback(() => {
+    if (contactMenuCloseTimeoutRef.current !== null) {
+      window.clearTimeout(contactMenuCloseTimeoutRef.current)
+      contactMenuCloseTimeoutRef.current = null
+    }
+
+    setIsContactMenuClosing(false)
+    setIsContactMenuOpen(true)
+  }, [])
+
+  const closeContactMenu = useCallback(() => {
+    if (!isContactMenuOpen) return
+
+    setIsContactMenuOpen(false)
+    setIsContactMenuClosing(true)
+
+    if (contactMenuCloseTimeoutRef.current !== null) {
+      window.clearTimeout(contactMenuCloseTimeoutRef.current)
+    }
+
+    contactMenuCloseTimeoutRef.current = window.setTimeout(() => {
+      setIsContactMenuClosing(false)
+      contactMenuCloseTimeoutRef.current = null
+    }, contactMenuCloseDurationMs)
+  }, [isContactMenuOpen])
 
   const handleCallClick = () => {
     trackGoal('hero_cta_call_click', {
@@ -151,7 +180,7 @@ const HeroSection = () => {
       cta_location: 'hero',
       source_context: `hero_${goalKey}`,
     })
-    setIsContactMenuOpen(false)
+    closeContactMenu()
   }
 
   useEffect(() => {
@@ -180,12 +209,12 @@ const HeroSection = () => {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target
       if (!(target instanceof Node) || contactMenuRef.current?.contains(target)) return
-      setIsContactMenuOpen(false)
+      closeContactMenu()
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsContactMenuOpen(false)
+        closeContactMenu()
       }
     }
 
@@ -196,7 +225,24 @@ const HeroSection = () => {
       document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isContactMenuOpen])
+  }, [closeContactMenu, isContactMenuOpen])
+
+  useEffect(() => {
+    return () => {
+      if (contactMenuCloseTimeoutRef.current !== null) {
+        window.clearTimeout(contactMenuCloseTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const contactMenuClassName = [
+    'contact-menu',
+    't-dropdown',
+    isContactMenuOpen ? 'is-open' : '',
+    isContactMenuClosing ? 'is-closing' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <Section className="hero" id="hero">
@@ -225,7 +271,12 @@ const HeroSection = () => {
               >
                 Позвонить
               </a>
-              <div className="hero-contact" ref={contactMenuRef}>
+              <div
+                className="hero-contact"
+                data-closing={isContactMenuClosing}
+                data-open={isContactMenuOpen}
+                ref={contactMenuRef}
+              >
                 <Button
                   size="lg"
                   variant="outline"
@@ -233,15 +284,21 @@ const HeroSection = () => {
                   aria-controls={contactMenuId}
                   aria-expanded={isContactMenuOpen}
                   aria-haspopup="menu"
-                  onClick={() => setIsContactMenuOpen((isOpen) => !isOpen)}
+                  onClick={() => {
+                    if (isContactMenuOpen) {
+                      closeContactMenu()
+                      return
+                    }
+
+                    openContactMenu()
+                  }}
                 >
                   Написать
                 </Button>
                 <div
                   aria-hidden={!isContactMenuOpen}
-                  className="contact-menu"
-                  data-open={isContactMenuOpen}
-                  hidden={!isContactMenuOpen}
+                  className={contactMenuClassName}
+                  data-origin="top-left"
                   id={contactMenuId}
                   role="menu"
                 >
@@ -253,6 +310,7 @@ const HeroSection = () => {
                       onClick={() => handleContactClick(item)}
                       rel={item.isExternal ? 'noreferrer' : undefined}
                       role="menuitem"
+                      tabIndex={isContactMenuOpen ? undefined : -1}
                       target={item.isExternal ? '_blank' : undefined}
                     >
                       <ContactIcon icon={item.icon} />
