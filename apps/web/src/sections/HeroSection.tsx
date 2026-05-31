@@ -198,6 +198,20 @@ const HeroSection = () => {
     }
   }, [isContactMenuOpen])
 
+  const contactMenuClassName = ['contact-menu', isContactMenuOpen ? 'is-open' : '']
+    .filter(Boolean)
+    .join(' ')
+  const contactMenuStyle: CSSProperties = {
+    transformOrigin: 'top left',
+    transform: `scale(${isContactMenuOpen ? 1 : 0.97})`,
+    opacity: isContactMenuOpen ? 1 : 0,
+    pointerEvents: isContactMenuOpen ? 'auto' : 'none',
+    transition: isContactMenuOpen
+      ? 'transform 250ms cubic-bezier(0.22, 1, 0.36, 1), opacity 250ms cubic-bezier(0.22, 1, 0.36, 1)'
+      : 'transform 150ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms cubic-bezier(0.22, 1, 0.36, 1)',
+    willChange: 'transform, opacity',
+  }
+
   return (
     <Section className="hero" id="hero">
       <Container size="wide">
@@ -225,7 +239,11 @@ const HeroSection = () => {
               >
                 Позвонить
               </a>
-              <div className="hero-contact" ref={contactMenuRef}>
+              <div
+                className="hero-contact"
+                data-open={isContactMenuOpen}
+                ref={contactMenuRef}
+              >
                 <Button
                   size="lg"
                   variant="outline"
@@ -239,11 +257,10 @@ const HeroSection = () => {
                 </Button>
                 <div
                   aria-hidden={!isContactMenuOpen}
-                  className="contact-menu"
-                  data-open={isContactMenuOpen}
-                  hidden={!isContactMenuOpen}
+                  className={contactMenuClassName}
                   id={contactMenuId}
                   role="menu"
+                  style={contactMenuStyle}
                 >
                   {heroContactChannels.map((item) => (
                     <a
@@ -253,6 +270,7 @@ const HeroSection = () => {
                       onClick={() => handleContactClick(item)}
                       rel={item.isExternal ? 'noreferrer' : undefined}
                       role="menuitem"
+                      tabIndex={isContactMenuOpen ? undefined : -1}
                       target={item.isExternal ? '_blank' : undefined}
                     >
                       <ContactIcon icon={item.icon} />
