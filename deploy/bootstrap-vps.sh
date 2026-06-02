@@ -135,7 +135,6 @@ main() {
   require_cmd sudo
   require_cmd curl
   require_cmd git
-  require_cmd npm
   require_cmd rsync
 
   require_bool "${ENABLE_UFW}" "ENABLE_UFW"
@@ -143,7 +142,7 @@ main() {
   require_bool "${TRUST_PROXY}" "TRUST_PROXY"
 
   info "Checking sudo access"
-  sudo -v
+  sudo -n true
   info "Deploy target: site=${NGINX_SITE_NAME}, service=${SERVICE_NAME}, app_root=${APP_ROOT}"
 
   info "Updating apt repositories and base packages"
@@ -152,6 +151,8 @@ main() {
   sudo apt install -y curl git ca-certificates ufw nginx certbot python3-certbot-nginx rsync
 
   install_node20
+  require_cmd node
+  require_cmd npm
 
   info "Node and npm versions"
   node -v
