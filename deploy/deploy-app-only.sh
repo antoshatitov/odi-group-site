@@ -219,7 +219,7 @@ main() {
   require_bool "${ALLOW_DIRTY_REPO}" "ALLOW_DIRTY_REPO"
 
   info "Checking sudo access"
-  sudo -v
+  sudo -n true
   info "Deploy target: site=${NGINX_SITE_NAME}, service=${SERVICE_NAME}, app_root=${APP_ROOT}"
   info "Deploy source: repo=${REPO_DIR}, ref=${DEPLOY_REF}"
 
