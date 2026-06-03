@@ -300,6 +300,8 @@ const runAnalyticsChecks = async (url) => {
       callbackDialog.getByRole('button', { name: 'Заказать звонок' }).click(),
     ])
     await waitForGoalCount(page, 'lead_form_success')
+    await callbackDialog.getByRole('button', { name: 'Закрыть модальное окно' }).click()
+    await callbackDialog.waitFor({ state: 'hidden' })
 
     await page.locator('#contacts').scrollIntoViewIfNeeded()
     await page.locator('#contacts a[href^="tel:"]').first().click()
