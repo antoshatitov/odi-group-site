@@ -182,13 +182,23 @@ const imagesByFolder = Object.entries(optimizedImageModules).reduce<Record<strin
 )
 
 const movePriorityGalleryItems = (items: GalleryItem[]) => {
-  if (items.length < 4) return items
+  const primaryId = 'Одноэтажный дом 84,2 м²'
+  const secondaryId = 'Одноэтажный дом 84,2 м² (Малое Васильково)'
+  const primaryIndex = items.findIndex((item) => item.id === primaryId)
+  const secondaryIndex = items.findIndex((item) => item.id === secondaryId)
 
-  const fourthItem = items[3]
-  const thirdItem = items[2]
-  const restItems = items.filter((_, index) => index !== 2 && index !== 3)
+  if (primaryIndex < 0 || secondaryIndex < 0) return items
 
-  return [fourthItem, thirdItem, ...restItems]
+  const nextItems = items.slice()
+  const [primaryItem] = nextItems.splice(primaryIndex, 1)
+  nextItems.splice(0, 0, primaryItem)
+
+  const shiftedSecondaryIndex =
+    secondaryIndex < primaryIndex ? secondaryIndex + 1 : secondaryIndex
+  const [secondaryItem] = nextItems.splice(shiftedSecondaryIndex, 1)
+  nextItems.splice(primaryIndex, 0, secondaryItem)
+
+  return nextItems
 }
 
 export const galleryItems: GalleryItem[] = movePriorityGalleryItems(

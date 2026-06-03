@@ -18,6 +18,10 @@ type LeadFormProps = {
   source: string
   projectId?: string
   projectName?: string
+  messageMode?: 'optional' | 'required' | 'hidden'
+  submitLabel?: string
+  successMessage?: string
+  className?: string
 }
 
 const resolveFormLocation = (source: string) => {
@@ -26,8 +30,17 @@ const resolveFormLocation = (source: string) => {
   return `${source}_form`
 }
 
-const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
-  const isConsultation = source === 'consultation'
+const LeadForm = ({
+  source,
+  projectId,
+  projectName,
+  messageMode = source === 'consultation' ? 'required' : 'optional',
+  submitLabel = 'Отправить заявку',
+  successMessage = 'Спасибо! Мы свяжемся с вами в ближайшее время.',
+  className = '',
+}: LeadFormProps) => {
+  const isMessageRequired = messageMode === 'required'
+  const shouldRenderMessage = messageMode !== 'hidden'
   const formLocation = resolveFormLocation(source)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -78,7 +91,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
     if (!isValidPhoneNumber(phone)) {
       nextErrors.phone = 'Введите корректный номер телефона.'
     }
-    if (isConsultation && message.trim().length === 0) {
+    if (isMessageRequired && message.trim().length === 0) {
       nextErrors.message = 'Опишите ваш вопрос в комментарии.'
     }
     if (!consent) {
@@ -119,7 +132,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
         payload: {
           name,
           phone,
-          message,
+          message: shouldRenderMessage ? message : '',
           projectId,
           projectName,
           source,
@@ -163,7 +176,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
 
   return (
     <form
-      className="stack"
+      className={`stack ${className}`.trim()}
       onSubmit={handleSubmit}
       onFocusCapture={() => {
         if (hasTrackedStartRef.current) return
@@ -206,19 +219,21 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
         error={fieldErrors.phone}
         ref={phoneRef}
       />
-      <TextArea
-        label="Комментарий"
-        name="message"
-        value={message}
-        required={isConsultation}
-        onChange={(event) => {
-          setMessage(event.target.value)
-          setFieldErrors((current) => ({ ...current, message: '' }))
-        }}
-        placeholder="Коротко опишите задачу или пожелания…"
-        error={fieldErrors.message}
-        ref={messageRef}
-      />
+      {shouldRenderMessage ? (
+        <TextArea
+          label="Комментарий"
+          name="message"
+          value={message}
+          required={isMessageRequired}
+          onChange={(event) => {
+            setMessage(event.target.value)
+            setFieldErrors((current) => ({ ...current, message: '' }))
+          }}
+          placeholder="Коротко опишите задачу или пожелания…"
+          error={fieldErrors.message}
+          ref={messageRef}
+        />
+      ) : null}
       <label className="field" style={{ display: 'none' }} aria-hidden="true">
         <span>Website</span>
         <input
@@ -260,7 +275,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
       </div>
       {status === 'success' && (
         <div className="badge" role="status">
-          Спасибо! Мы свяжемся с вами в ближайшее время.
+          {successMessage}
         </div>
       )}
       {status === 'error' && error && (
@@ -273,7 +288,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
         </div>
       )}
       <Button type="submit" disabled={status === 'loading'}>
-        {status === 'loading' ? 'Отправляем…' : 'Отправить заявку'}
+        {status === 'loading' ? 'Отправляем…' : submitLabel}
       </Button>
     </form>
   )

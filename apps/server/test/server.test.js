@@ -186,6 +186,48 @@ describe('server modules', () => {
     }
   })
 
+  it('sends callback leads through the main Telegram channel with callback title', async () => {
+    const requests = []
+    const restore = installFetchMock(async (url, options) => {
+      requests.push({
+        url,
+        body: JSON.parse(options.body),
+      })
+
+      return new Response('{}', {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+
+    const app = await createApp(createTestConfig())
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/lead',
+        payload: {
+          name: 'Тестовый Пользователь',
+          phone: '+7 924 442-28-00',
+          source: 'callback',
+          consent: true,
+          source_context: 'header_callback',
+          landing_page: '/?callback=1',
+        },
+      })
+
+      assert.equal(response.statusCode, 200)
+      assert.equal(response.json().ok, true)
+      assert.equal(requests.length, 1)
+      assert.match(requests[0].url, /api\.telegram\.org\/botbot-main\/sendMessage/)
+      assert.equal(requests[0].body.chat_id, 'chat-main')
+      assert.match(requests[0].body.text, /Заказ звонка/)
+    } finally {
+      await app.close()
+      restore()
+    }
+  })
+
   it('processes calculator requests and reports metrics', async () => {
     const requests = []
     const restore = installFetchMock(async (url, options) => {

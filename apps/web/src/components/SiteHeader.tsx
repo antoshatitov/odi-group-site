@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import Button from './Button'
+import LeadForm from './LeadForm'
+import Modal from './Modal'
+import ContactIcon from './ContactIcon'
+import { messengerChannels } from '../data/contactChannels'
 import { trackGoal } from '../utils/analytics'
 import { resolveHomeSectionHref } from '../utils/navigation'
 
@@ -27,6 +31,7 @@ type BodyScrollLockStyles = {
 
 const SiteHeader = () => {
   const [open, setOpen] = useState(false)
+  const [isCallbackOpen, setIsCallbackOpen] = useState(false)
   const mobileNavPanelRef = useRef<HTMLDivElement | null>(null)
   const menuToggleRef = useRef<HTMLButtonElement | null>(null)
   const lockedScrollYRef = useRef(0)
@@ -41,6 +46,14 @@ const SiteHeader = () => {
   const closeMenu = ({ restoreScroll = true }: { restoreScroll?: boolean } = {}) => {
     skipScrollRestoreRef.current = !restoreScroll
     setOpen(false)
+  }
+
+  const openCallbackModal = () => {
+    trackGoal('header_callback_click', {
+      cta_location: 'header',
+      source_context: 'header_callback',
+    })
+    setIsCallbackOpen(true)
   }
 
   useEffect(() => {
@@ -207,28 +220,31 @@ const SiteHeader = () => {
               >
                 +7 924 442-28-00
               </a>
-              <a
-                className="btn btn-outline"
-                href="https://t.me/o781781"
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => {
-                  trackGoal('mobile_menu_telegram_click', {
-                    cta_location: 'mobile_menu',
-                    source_context: 'mobile_menu_telegram',
-                  })
-                  closeMenu()
-                }}
-              >
-                Telegram
-              </a>
-              <a
-                className="btn btn-primary"
-                href={resolveHomeSectionHref('#consultation')}
-                onClick={() => closeMenu({ restoreScroll: false })}
-              >
-                Получить консультацию
-              </a>
+              <div className="mobile-nav-messengers" aria-label="Мессенджеры ОДИ">
+                {messengerChannels.map((channel) => {
+                  const goalKey = channel.label.toLowerCase()
+
+                  return (
+                    <a
+                      className="contact-channel-link mobile-nav-messenger"
+                      href={channel.href}
+                      key={channel.label}
+                      target={channel.isExternal ? '_blank' : undefined}
+                      rel={channel.isExternal ? 'noreferrer' : undefined}
+                      onClick={() => {
+                        trackGoal(`mobile_menu_${goalKey}_click`, {
+                          cta_location: 'mobile_menu',
+                          source_context: `mobile_menu_${goalKey}`,
+                        })
+                        closeMenu()
+                      }}
+                    >
+                      <ContactIcon icon={channel.icon} className="contact-channel-icon" />
+                      <span>{channel.label}</span>
+                    </a>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>,
@@ -265,18 +281,9 @@ const SiteHeader = () => {
             >
               <span className="header-phone-text">+7 924 442-28-00</span>
             </a>
-            <a
-              className="btn btn-primary btn-sm"
-              href={resolveHomeSectionHref('#consultation')}
-              onClick={() =>
-                trackGoal('header_consultation_click', {
-                  cta_location: 'header',
-                  source_context: 'header_consultation',
-                })
-              }
-            >
-              Получить консультацию
-            </a>
+            <Button className="btn-sm" onClick={openCallbackModal} type="button">
+              Заказать звонок
+            </Button>
             <Button
               ref={menuToggleRef}
               className="menu-toggle"
@@ -294,6 +301,24 @@ const SiteHeader = () => {
         </div>
       </header>
       {mobileNav}
+      <Modal
+        isOpen={isCallbackOpen}
+        title="Заказать звонок"
+        onClose={() => setIsCallbackOpen(false)}
+      >
+        <div className="callback-modal-content">
+          <p className="callback-modal-lead">
+            Оставьте заявку, и мы свяжемся с вами в ближайшее время.
+          </p>
+          <LeadForm
+            className="callback-form"
+            source="callback"
+            messageMode="hidden"
+            submitLabel="Заказать звонок"
+            successMessage="Спасибо! Мы перезвоним вам в ближайшее время."
+          />
+        </div>
+      </Modal>
     </>
   )
 }

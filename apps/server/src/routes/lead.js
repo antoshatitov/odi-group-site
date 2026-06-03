@@ -30,6 +30,7 @@ export const registerLeadRoute = (server, config) => {
       first_landing_page,
     } = request.body
     const isConsultation = source === 'consultation'
+    const isCallback = source === 'callback'
     const normalizedMessage = normalizeText(message, 500)
 
     if (!consent) {
@@ -54,7 +55,7 @@ export const registerLeadRoute = (server, config) => {
       projectId,
       projectName,
       source,
-      title: isConsultation ? 'Запрос консультации' : undefined,
+      title: isConsultation ? 'Запрос консультации' : isCallback ? 'Заказ звонка' : undefined,
       attribution: {
         source_context,
         utm_source,
