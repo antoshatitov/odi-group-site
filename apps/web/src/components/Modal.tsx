@@ -88,7 +88,13 @@ const Modal = ({
   }, [isOpen, onClose])
 
   if (!isOpen) return null
-  const modalClassName = `modal ${variant === 'lightbox' ? 'modal-lightbox' : ''}`.trim()
+  const modalClassName = [
+    'modal',
+    variant === 'lightbox' ? 'modal-lightbox' : '',
+    side ? '' : 'modal-single-column',
+  ]
+    .filter(Boolean)
+    .join(' ')
   const modalBodyClassName =
     `modal-body ${variant === 'lightbox' ? 'modal-body-lightbox' : ''}`.trim()
 

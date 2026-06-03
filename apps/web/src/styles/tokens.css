@@ -19,9 +19,9 @@
   --color-ink-700: #2b3431;
   --color-ink-600: #3a4541;
   --color-ink-500: #4c5854;
-  --color-stone-50: #f8f6f1;
-  --color-stone-100: #f2efe7;
-  --color-stone-200: #e7e2d4;
+  --color-stone-50: #ffffff;
+  --color-stone-100: #ffffff;
+  --color-stone-200: #f6f8f7;
   --color-mist-100: #e6efec;
   --color-mist-200: #d8e5e0;
   --color-moss-600: #1f5f53;
@@ -32,11 +32,11 @@
 
   --gradient-hero: radial-gradient(
       120% 120% at 90% 0%,
-      rgba(31, 95, 83, 0.18) 0%,
-      rgba(31, 95, 83, 0) 55%
+      rgba(31, 95, 83, 0.14) 0%,
+      rgba(31, 95, 83, 0) 58%
     ),
-    radial-gradient(130% 130% at 10% 10%, rgba(208, 161, 91, 0.2) 0%, rgba(0, 0, 0, 0) 55%),
-    linear-gradient(180deg, #f7f4ee 0%, #edf3f1 100%);
+    radial-gradient(130% 130% at 8% 12%, rgba(208, 161, 91, 0.1) 0%, rgba(0, 0, 0, 0) 55%),
+    linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;

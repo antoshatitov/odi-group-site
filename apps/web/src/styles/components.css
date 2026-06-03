@@ -64,7 +64,7 @@
 }
 
 .card {
-  background: rgba(248, 246, 241, 0.9);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(18, 25, 23, 0.08);
   border-radius: var(--radius-l);
   padding: var(--space-6);
@@ -73,7 +73,7 @@
 }
 
 .card-solid {
-  background: #f4f1ea;
+  background: #ffffff;
 }
 
 .badge {
@@ -373,7 +373,7 @@
 }
 
 .modal {
-  background: #f8f6f1;
+  background: #ffffff;
   border-radius: var(--radius-l);
   width: min(980px, 100%);
   height: min(88vh, calc(100vh - (var(--space-5) * 2)));
@@ -383,6 +383,13 @@
   grid-template-columns: 1.1fr 1fr;
   grid-template-rows: minmax(0, 1fr);
   box-shadow: var(--shadow-strong);
+}
+
+.modal-single-column {
+  width: min(36rem, 100%);
+  height: auto;
+  max-height: min(88vh, calc(100vh - (var(--space-5) * 2)));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .modal-lightbox {
@@ -400,6 +407,11 @@
     max-height: 88dvh;
   }
 
+  .modal-single-column {
+    height: auto;
+    max-height: min(88dvh, calc(100dvh - (var(--space-5) * 2)));
+  }
+
   .modal-lightbox {
     height: min(92dvh, calc(100dvh - (var(--space-5) * 2)));
     max-height: 92dvh;
@@ -414,7 +426,7 @@
 }
 
 .modal-side {
-  background: linear-gradient(180deg, rgba(31, 95, 83, 0.12), rgba(31, 95, 83, 0.02));
+  background: linear-gradient(180deg, rgba(31, 95, 83, 0.1), rgba(31, 95, 83, 0.03));
   padding: var(--space-6);
   min-height: 0;
   overflow-y: auto;
@@ -471,12 +483,13 @@
 .section {
   padding: var(--space-7) 0;
   position: relative;
+  background: #ffffff;
   content-visibility: auto;
   contain-intrinsic-size: 1px 900px;
 }
 
 .section-toned {
-  background: linear-gradient(180deg, rgba(231, 237, 232, 0.8), rgba(248, 246, 241, 0.8));
+  background: #ffffff;
 }
 
 .section-ink {
@@ -509,6 +522,10 @@
     height: min(94vh, calc(100vh - (var(--space-4) * 2)));
     max-height: 94vh;
     overflow: hidden;
+  }
+
+  .modal-single-column {
+    width: min(36rem, 100%);
   }
 
   .modal-body-lightbox {

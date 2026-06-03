@@ -6,34 +6,24 @@
 
 html {
   scroll-behavior: smooth;
-  background: var(--color-stone-50);
+  background: #ffffff;
 }
 
 body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--color-ink-900);
-  background: var(--color-stone-50);
+  background: #ffffff;
   min-height: 100vh;
   line-height: 1.6;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.07;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
-  mix-blend-mode: multiply;
-  z-index: 0;
-}
-
 #root {
   position: relative;
   z-index: 1;
+  background: #ffffff;
 }
 
 img,
@@ -70,6 +60,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0;
+  background: #ffffff;
 }
 
 section {

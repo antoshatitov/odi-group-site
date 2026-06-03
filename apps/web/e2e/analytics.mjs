@@ -21,9 +21,12 @@ const requiredGoals = [
   'hero_cta_telegram_click',
   'hero_cta_call_click',
   'header_phone_click',
-  'header_consultation_click',
+  'header_callback_click',
   'mobile_menu_call_click',
   'mobile_menu_telegram_click',
+  'mobile_menu_whatsapp_click',
+  'mobile_menu_max_click',
+  'mobile_menu_vk_click',
   'contacts_phone_click',
   'contacts_telegram_click',
   'footer_phone_click',
@@ -255,7 +258,13 @@ const runAnalyticsChecks = async (url) => {
           if (!target) return
 
           const href = target.getAttribute('href') || ''
-          if (href.startsWith('tel:') || href.includes('t.me/')) {
+          if (
+            href.startsWith('tel:') ||
+            href.includes('t.me/') ||
+            href.includes('wa.me/') ||
+            href.includes('max.ru/') ||
+            href.includes('vk.com/')
+          ) {
             event.preventDefault()
           }
         },
@@ -279,8 +288,18 @@ const runAnalyticsChecks = async (url) => {
     await page.locator('a.header-phone').click()
     await waitForGoalCount(page, 'header_phone_click')
 
-    await page.locator('.header-actions a').filter({ hasText: 'Получить консультацию' }).click()
-    await waitForGoalCount(page, 'header_consultation_click')
+    await page.getByRole('button', { name: 'Заказать звонок' }).click()
+    await waitForGoalCount(page, 'header_callback_click')
+
+    const callbackDialog = page.getByRole('dialog', { name: 'Заказать звонок' })
+    await callbackDialog.getByLabel('Имя').fill('Тестовый Пользователь')
+    await callbackDialog.getByLabel('Телефон').fill('+7 924 442-28-00')
+    await callbackDialog.getByRole('checkbox').check()
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes('/api/lead') && response.status() === 200),
+      callbackDialog.getByRole('button', { name: 'Заказать звонок' }).click(),
+    ])
+    await waitForGoalCount(page, 'lead_form_success')
 
     await page.locator('#contacts').scrollIntoViewIfNeeded()
     await page.locator('#contacts a[href^="tel:"]').first().click()
@@ -288,17 +307,6 @@ const runAnalyticsChecks = async (url) => {
 
     await page.locator('#contacts a[href^="https://t.me/"]').first().click()
     await waitForGoalCount(page, 'contacts_telegram_click')
-
-    const leadForm = page.locator('#consultation form').first()
-    await leadForm.getByLabel('Имя').fill('Тестовый Пользователь')
-    await leadForm.getByLabel('Телефон').fill('+7 924 442-28-00')
-    await leadForm.getByLabel('Комментарий').fill('Тестовая заявка для e2e аналитики')
-    await leadForm.getByRole('checkbox').check()
-    await Promise.all([
-      page.waitForResponse((response) => response.url().includes('/api/lead') && response.status() === 200),
-      leadForm.getByRole('button', { name: 'Отправить заявку' }).click(),
-    ])
-    await waitForGoalCount(page, 'lead_form_success')
 
     const heroCalculatorButtonCount = await page
       .locator('.hero button:has-text("Расчет стоимости")')
@@ -323,6 +331,24 @@ const runAnalyticsChecks = async (url) => {
     await waitForGoalCount(page, 'mobile_menu_telegram_click')
     await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'hidden' })
 
+    await page.getByRole('button', { name: 'Меню' }).click()
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'visible' })
+    await page.locator('.mobile-nav-actions a[href*="wa.me/"]').click()
+    await waitForGoalCount(page, 'mobile_menu_whatsapp_click')
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'hidden' })
+
+    await page.getByRole('button', { name: 'Меню' }).click()
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'visible' })
+    await page.locator('.mobile-nav-actions a[href*="max.ru/"]').click()
+    await waitForGoalCount(page, 'mobile_menu_max_click')
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'hidden' })
+
+    await page.getByRole('button', { name: 'Меню' }).click()
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'visible' })
+    await page.locator('.mobile-nav-actions a[href*="vk.com/"]').click()
+    await waitForGoalCount(page, 'mobile_menu_vk_click')
+    await page.getByRole('dialog', { name: 'Мобильное меню' }).waitFor({ state: 'hidden' })
+
     await page.locator('.site-footer').scrollIntoViewIfNeeded()
     await page.locator('.site-footer a[href^="tel:"]').click()
     await waitForGoalCount(page, 'footer_phone_click')
@@ -339,6 +365,7 @@ const runAnalyticsChecks = async (url) => {
 
     assert(requests.lead.length === 1, `Expected 1 /api/lead call, got ${requests.lead.length}`)
     assertRequestPayload(requests.lead[0], '/api/lead')
+    assert(requests.lead[0].source === 'callback', `Expected callback lead source, got ${requests.lead[0].source}`)
     assert(
       requests.costEstimate.length === 0,
       `Expected no /api/cost-estimate calls while calculator access is hidden, got ${requests.costEstimate.length}`,
