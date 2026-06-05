@@ -96,11 +96,20 @@ const runSmokeChecks = async (url) => {
     await desktopPage.goto(url, { waitUntil: 'domcontentloaded' })
     await desktopPage.waitForSelector('#main-content')
 
-    for (const selector of ['#gallery', '#sale', '#projects', '#about', '#services', '#contacts']) {
+    for (const selector of ['#gallery', '#projects', '#about', '#services', '#contacts']) {
       const section = await desktopPage.$(selector)
       if (!section) {
         throw new Error(`Missing required section: ${selector}`)
       }
+    }
+
+    const saleNavLinkCount = await desktopPage.getByRole('link', { name: 'Продажа' }).count()
+    const saleSection = await desktopPage.$('#sale')
+    if (saleNavLinkCount > 0 && !saleSection) {
+      throw new Error('Missing required section: #sale')
+    }
+    if (saleNavLinkCount === 0 && saleSection) {
+      throw new Error('Sale section must stay hidden when sale navigation is hidden')
     }
 
     assert.equal(
