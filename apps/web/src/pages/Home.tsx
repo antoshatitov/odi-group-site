@@ -9,10 +9,12 @@ import type {
 import Badge from '../components/Badge'
 import Card from '../components/Card'
 import Container from '../components/Container'
+import JsonLd from '../components/JsonLd'
 import LeadForm from '../components/LeadForm'
 import Modal from '../components/Modal'
 import Section from '../components/Section'
 import { buildProjectItems, saleHouseItems } from '../data/showcaseGalleries'
+import { homeStructuredData } from '../data/structuredData'
 import { useDeferredMapScript } from '../hooks/useDeferredMapScript'
 import { useGalleryModalNavigation } from '../hooks/useGalleryModalNavigation'
 import { useLazyGalleryData } from '../hooks/useLazyGalleryData'
@@ -465,6 +467,7 @@ const Home = () => {
 
   return (
     <>
+      <JsonLd data={homeStructuredData} />
       <HeroSection />
 
       <GallerySection
