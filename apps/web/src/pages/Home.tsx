@@ -24,7 +24,6 @@ import HeroSection from '../sections/HeroSection'
 import ServicesSection from '../sections/ServicesSection'
 import type { ServiceItem } from '../sections/ServicesSection'
 import type { GalleryItem } from '../types'
-import { trackGoal } from '../utils/analytics'
 import { buildResponsiveSrcSet } from '../utils/images'
 
 const services: ServiceItem[] = [
@@ -218,14 +217,6 @@ const Home = () => {
 
     return () => observer.disconnect()
   }, [isProcessVisible])
-
-  useEffect(() => {
-    if (!isCalculatorOpen) return
-    trackGoal('calculator_open', {
-      cta_location: 'hero',
-      source_context: 'calculator_modal',
-    })
-  }, [isCalculatorOpen])
 
   const openGallery = (item: GalleryItem, photoIndex = 0) => {
     const lastPhotoIndex = Math.max(item.photos.length - 1, 0)

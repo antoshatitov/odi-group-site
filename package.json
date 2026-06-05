@@ -15,7 +15,6 @@
     "agent-browser:smoke": "node scripts/agent-browser-smoke.mjs",
     "playwright:install:web": "npm --workspace apps/web run playwright:install",
     "test:e2e:web": "npm --workspace apps/web run e2e:smoke",
-    "test:e2e:analytics:web": "npm --workspace apps/web run e2e:analytics",
     "test:server": "npm --workspace apps/server run test",
     "repo:safety": "node scripts/repo-safety.mjs",
     "dev:server": "npm --workspace apps/server run dev",

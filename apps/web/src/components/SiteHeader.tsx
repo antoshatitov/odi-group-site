@@ -7,7 +7,6 @@ import Modal from './Modal'
 import ContactIcon from './ContactIcon'
 import { messengerChannels } from '../data/contactChannels'
 import { SHOW_SALE_SECTION } from '../data/showcaseGalleries'
-import { trackGoal } from '../utils/analytics'
 import { resolveHomeSectionHref } from '../utils/navigation'
 
 const navLinks = [
@@ -50,10 +49,6 @@ const SiteHeader = () => {
   }
 
   const openCallbackModal = () => {
-    trackGoal('header_callback_click', {
-      cta_location: 'header',
-      source_context: 'header_callback',
-    })
     setIsCallbackOpen(true)
   }
 
@@ -211,40 +206,24 @@ const SiteHeader = () => {
               <a
                 className="btn btn-outline"
                 href="tel:+79244422800"
-                onClick={() => {
-                  trackGoal('mobile_menu_call_click', {
-                    cta_location: 'mobile_menu',
-                    source_context: 'mobile_menu_phone',
-                  })
-                  closeMenu()
-                }}
+                onClick={() => closeMenu()}
               >
                 +7 924 442-28-00
               </a>
               <div className="mobile-nav-messengers" aria-label="Мессенджеры ОДИ">
-                {messengerChannels.map((channel) => {
-                  const goalKey = channel.label.toLowerCase()
-
-                  return (
-                    <a
-                      className="contact-channel-link mobile-nav-messenger"
-                      href={channel.href}
-                      key={channel.label}
-                      target={channel.isExternal ? '_blank' : undefined}
-                      rel={channel.isExternal ? 'noreferrer' : undefined}
-                      onClick={() => {
-                        trackGoal(`mobile_menu_${goalKey}_click`, {
-                          cta_location: 'mobile_menu',
-                          source_context: `mobile_menu_${goalKey}`,
-                        })
-                        closeMenu()
-                      }}
-                    >
-                      <ContactIcon icon={channel.icon} className="contact-channel-icon" />
-                      <span>{channel.label}</span>
-                    </a>
-                  )
-                })}
+                {messengerChannels.map((channel) => (
+                  <a
+                    className="contact-channel-link mobile-nav-messenger"
+                    href={channel.href}
+                    key={channel.label}
+                    target={channel.isExternal ? '_blank' : undefined}
+                    rel={channel.isExternal ? 'noreferrer' : undefined}
+                    onClick={() => closeMenu()}
+                  >
+                    <ContactIcon icon={channel.icon} className="contact-channel-icon" />
+                    <span>{channel.label}</span>
+                  </a>
+                ))}
               </div>
             </div>
           </div>
@@ -273,12 +252,6 @@ const SiteHeader = () => {
               className="btn btn-outline btn-sm header-phone"
               href="tel:+79244422800"
               aria-label="Позвонить"
-              onClick={() =>
-                trackGoal('header_phone_click', {
-                  cta_location: 'header',
-                  source_context: 'header_phone',
-                })
-              }
             >
               <span className="header-phone-text">+7 924 442-28-00</span>
             </a>

@@ -5,13 +5,11 @@ import type { FormEvent } from 'react'
 import Button from './Button'
 import Input from './Input'
 import {
-  FormSubmissionError,
   PHONE_INPUT_PATTERN,
   getSubmissionErrorMessage,
   isValidPhoneNumber,
   submitFormJson,
 } from '../lib/formSubmission'
-import { trackGoal } from '../utils/analytics'
 import { formatRubles } from '../utils/format'
 
 const LOCAL_ATTEMPTS_KEY = 'odi_calc_attempts'
@@ -183,12 +181,6 @@ const CostCalculator = () => {
 
     const nextErrors = validate()
     if (Object.keys(nextErrors).length > 0) {
-      trackGoal('calculator_error', {
-        cta_location: CALCULATOR_LOCATION,
-        source_context: CALCULATOR_LOCATION,
-        error_type: 'validation',
-        error_fields: Object.keys(nextErrors).join(','),
-      })
       focusFirstError(nextErrors)
       return
     }
@@ -197,23 +189,12 @@ const CostCalculator = () => {
     const attemptTime = Date.now()
     const recentAttempts = getRecentAttempts(attemptTime)
     if (recentAttempts.length >= LOCAL_LIMIT_MAX) {
-      trackGoal('calculator_error', {
-        cta_location: CALCULATOR_LOCATION,
-        source_context: CALCULATOR_LOCATION,
-        error_type: 'local_rate_limit',
-      })
       setError('Слишком частые запросы. Попробуйте снова через пару минут.')
       setStatus('error')
       return
     }
 
     recordAttempt(attemptTime)
-    trackGoal('calculator_submit', {
-      cta_location: CALCULATOR_LOCATION,
-      source_context: CALCULATOR_LOCATION,
-      package_type: packageType,
-      floors: floors || 'unknown',
-    })
     setStatus('loading')
 
     try {
@@ -256,26 +237,8 @@ const CostCalculator = () => {
       }
 
       setStatus('success')
-      trackGoal('calculator_success', {
-        cta_location: CALCULATOR_LOCATION,
-        source_context: CALCULATOR_LOCATION,
-        package_type: packageType,
-      })
     } catch (error) {
       setStatus('error')
-      if (error instanceof FormSubmissionError && error.kind === 'timeout') {
-        trackGoal('calculator_error', {
-          cta_location: CALCULATOR_LOCATION,
-          source_context: CALCULATOR_LOCATION,
-          error_type: 'timeout',
-        })
-      } else {
-        trackGoal('calculator_error', {
-          cta_location: CALCULATOR_LOCATION,
-          source_context: CALCULATOR_LOCATION,
-          error_type: 'request',
-        })
-      }
       setError(
         getSubmissionErrorMessage(error, {
           timeout: 'Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.',
