@@ -22,12 +22,24 @@ type LeadFormProps = {
   submitLabel?: string
   successMessage?: string
   className?: string
+  autoPrefixRussianPhone?: boolean
 }
 
 const resolveFormLocation = (source: string) => {
   if (source === 'consultation') return 'consultation_form'
   if (source === 'project') return 'project_form'
   return `${source}_form`
+}
+
+const applyRussianPhonePrefix = (value: string) => {
+  const trimmedStart = value.trimStart()
+  if (trimmedStart.startsWith('+7')) return value
+
+  const digits = value.replace(/\D/g, '')
+  if (digits.startsWith('9')) return `+7${digits}`
+  if (digits.startsWith('7')) return `+${digits}`
+
+  return value
 }
 
 const LeadForm = ({
@@ -38,6 +50,7 @@ const LeadForm = ({
   submitLabel = 'Отправить заявку',
   successMessage = 'Спасибо! Мы свяжемся с вами в ближайшее время.',
   className = '',
+  autoPrefixRussianPhone = false,
 }: LeadFormProps) => {
   const isMessageRequired = messageMode === 'required'
   const shouldRenderMessage = messageMode !== 'hidden'
@@ -210,7 +223,10 @@ const LeadForm = ({
         required
         value={phone}
         onChange={(event) => {
-          setPhone(event.target.value)
+          const nextPhone = autoPrefixRussianPhone
+            ? applyRussianPhonePrefix(event.target.value)
+            : event.target.value
+          setPhone(nextPhone)
           setFieldErrors((current) => ({ ...current, phone: '' }))
         }}
         placeholder="+7 (___) ___-__-__"

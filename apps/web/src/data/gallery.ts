@@ -182,10 +182,12 @@ const imagesByFolder = Object.entries(optimizedImageModules).reduce<Record<strin
 )
 
 const movePriorityGalleryItems = (items: GalleryItem[]) => {
-  const primaryId = 'Одноэтажный дом 84,2 м²'
-  const secondaryId = 'Одноэтажный дом 84,2 м² (Малое Васильково)'
-  const primaryIndex = items.findIndex((item) => item.id === primaryId)
-  const secondaryIndex = items.findIndex((item) => item.id === secondaryId)
+  const primaryIndex = items.findIndex(
+    (item) => item.title.includes('84,2 м²') && item.location === 'п. Холмогоровка',
+  )
+  const secondaryIndex = items.findIndex(
+    (item) => item.title.includes('84,2 м²') && item.location === 'п. Малое Васильково',
+  )
 
   if (primaryIndex < 0 || secondaryIndex < 0) return items
 

@@ -425,6 +425,14 @@
   overscroll-behavior: contain;
 }
 
+.modal-single-column .modal-body {
+  position: relative;
+}
+
+.modal-single-column .modal-body > .stack {
+  padding-right: calc(2.75rem + var(--space-3));
+}
+
 .modal-side {
   background: linear-gradient(180deg, rgba(31, 95, 83, 0.1), rgba(31, 95, 83, 0.03));
   padding: var(--space-6);
@@ -457,6 +465,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.modal-single-column .modal-close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
 }
 
 .modal-lightbox .modal-close {
