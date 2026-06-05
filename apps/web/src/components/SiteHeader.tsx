@@ -6,12 +6,13 @@ import LeadForm from './LeadForm'
 import Modal from './Modal'
 import ContactIcon from './ContactIcon'
 import { messengerChannels } from '../data/contactChannels'
+import { SHOW_SALE_SECTION } from '../data/showcaseGalleries'
 import { trackGoal } from '../utils/analytics'
 import { resolveHomeSectionHref } from '../utils/navigation'
 
 const navLinks = [
   { label: 'Построено', hash: '#gallery' },
-  { label: 'Продажа', hash: '#sale' },
+  ...(SHOW_SALE_SECTION ? [{ label: 'Продажа', hash: '#sale' }] : []),
   { label: 'Проекты', hash: '#projects' },
   { label: 'О компании', hash: '#about' },
   { label: 'Услуги', hash: '#services' },
@@ -314,6 +315,7 @@ const SiteHeader = () => {
             className="callback-form"
             source="callback"
             messageMode="hidden"
+            autoPrefixRussianPhone
             submitLabel="Заказать звонок"
             successMessage="Спасибо! Мы перезвоним вам в ближайшее время."
           />

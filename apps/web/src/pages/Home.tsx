@@ -13,7 +13,7 @@ import JsonLd from '../components/JsonLd'
 import LeadForm from '../components/LeadForm'
 import Modal from '../components/Modal'
 import Section from '../components/Section'
-import { buildProjectItems, saleHouseItems } from '../data/showcaseGalleries'
+import { SHOW_SALE_SECTION, buildProjectItems, saleHouseItems } from '../data/showcaseGalleries'
 import { homeStructuredData } from '../data/structuredData'
 import { useDeferredMapScript } from '../hooks/useDeferredMapScript'
 import { useGalleryModalNavigation } from '../hooks/useGalleryModalNavigation'
@@ -477,17 +477,19 @@ const Home = () => {
         onOpenGallery={openGallery}
       />
 
-      <GallerySection
-        id="sale"
-        tone="default"
-        eyebrow="Сейчас в продаже"
-        title="Сейчас в продаже"
-        intro="Новые дома, которые уже полностью готовы к продаже либо будут готовы в самое ближайшее время. С полностью готовым пакетом документов, поставленные на учет и подключенные к электросети. Все дома в этом разделе подходят под любой вид ипотеки, в том числе семейную ипотеку 6%."
-        emptyMessage="Дома в продаже появятся здесь в ближайшее время."
-        ariaLabel="Галерея домов в продаже"
-        items={saleHouseItems}
-        onOpenGallery={openGallery}
-      />
+      {SHOW_SALE_SECTION ? (
+        <GallerySection
+          id="sale"
+          tone="default"
+          eyebrow="Сейчас в продаже"
+          title="Сейчас в продаже"
+          intro="Новые дома, которые уже полностью готовы к продаже либо будут готовы в самое ближайшее время. С полностью готовым пакетом документов, поставленные на учет и подключенные к электросети. Все дома в этом разделе подходят под любой вид ипотеки, в том числе семейную ипотеку 6%."
+          emptyMessage="Дома в продаже появятся здесь в ближайшее время."
+          ariaLabel="Галерея домов в продаже"
+          items={saleHouseItems}
+          onOpenGallery={openGallery}
+        />
+      ) : null}
 
       <GallerySection
         id="projects"
