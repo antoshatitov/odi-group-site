@@ -71,8 +71,6 @@ jobs:
       - name: Lint web
         run: npm run lint:web
       - name: Build web
-        env:
-          VITE_YM_COUNTER_ID: "1"
         run: npm run build:web
       - name: Check perf budgets
         run: npm --workspace apps/web run perf-check
@@ -80,7 +78,7 @@ jobs:
         run: npm --workspace apps/web run media-check
       - name: Install Playwright browser
         run: npm --workspace apps/web run playwright:install:ci
-      - name: Run Playwright smoke and analytics
+      - name: Run Playwright smoke
         run: |
           npm --workspace apps/web run preview -- --host 127.0.0.1 --port 4173 &
           PREVIEW_PID=$!
@@ -92,4 +90,3 @@ jobs:
             sleep 1
           done
           E2E_BASE_URL=http://127.0.0.1:4173 npm --workspace apps/web run e2e:smoke
-          E2E_BASE_URL=http://127.0.0.1:4173 npm --workspace apps/web run e2e:analytics

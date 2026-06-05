@@ -7,12 +7,10 @@ import Input from './Input'
 import TextArea from './TextArea'
 import {
   PHONE_INPUT_PATTERN,
-  getSubmissionErrorKind,
   getSubmissionErrorMessage,
   isValidPhoneNumber,
   submitFormJson,
 } from '../lib/formSubmission'
-import { trackGoal } from '../utils/analytics'
 
 type LeadFormProps = {
   source: string
@@ -23,12 +21,6 @@ type LeadFormProps = {
   successMessage?: string
   className?: string
   autoPrefixRussianPhone?: boolean
-}
-
-const resolveFormLocation = (source: string) => {
-  if (source === 'consultation') return 'consultation_form'
-  if (source === 'project') return 'project_form'
-  return `${source}_form`
 }
 
 const applyRussianPhonePrefix = (value: string) => {
@@ -54,7 +46,6 @@ const LeadForm = ({
 }: LeadFormProps) => {
   const isMessageRequired = messageMode === 'required'
   const shouldRenderMessage = messageMode !== 'hidden'
-  const formLocation = resolveFormLocation(source)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [message, setMessage] = useState('')
@@ -67,7 +58,6 @@ const LeadForm = ({
   const phoneRef = useRef<HTMLInputElement | null>(null)
   const messageRef = useRef<HTMLTextAreaElement | null>(null)
   const consentRef = useRef<HTMLInputElement | null>(null)
-  const hasTrackedStartRef = useRef(false)
 
   const reset = () => {
     setName('')
@@ -121,21 +111,9 @@ const LeadForm = ({
 
     const nextErrors = validate()
     if (Object.keys(nextErrors).length > 0) {
-      trackGoal('lead_form_error', {
-        cta_location: formLocation,
-        source_context: source,
-        error_type: 'validation',
-        error_fields: Object.keys(nextErrors).join(','),
-      })
       focusFirstError(nextErrors)
       return
     }
-
-    trackGoal('lead_form_submit', {
-      cta_location: formLocation,
-      source_context: source,
-      form_type: source,
-    })
 
     setStatus('loading')
 
@@ -156,28 +134,9 @@ const LeadForm = ({
       })
 
       setStatus('success')
-      trackGoal('lead_form_success', {
-        cta_location: formLocation,
-        source_context: source,
-        form_type: source,
-      })
       reset()
     } catch (error) {
       setStatus('error')
-      const errorKind = getSubmissionErrorKind(error)
-      if (errorKind === 'timeout') {
-        trackGoal('lead_form_error', {
-          cta_location: formLocation,
-          source_context: source,
-          error_type: 'timeout',
-        })
-      } else {
-        trackGoal('lead_form_error', {
-          cta_location: formLocation,
-          source_context: source,
-          error_type: 'request',
-        })
-      }
       setError(
         getSubmissionErrorMessage(error, {
           timeout: 'Сервер отвечает слишком долго. Проверьте интернет и попробуйте ещё раз.',
@@ -191,15 +150,6 @@ const LeadForm = ({
     <form
       className={`stack ${className}`.trim()}
       onSubmit={handleSubmit}
-      onFocusCapture={() => {
-        if (hasTrackedStartRef.current) return
-        hasTrackedStartRef.current = true
-        trackGoal('lead_form_started', {
-          cta_location: formLocation,
-          source_context: source,
-          form_type: source,
-        })
-      }}
       noValidate
     >
       <Input

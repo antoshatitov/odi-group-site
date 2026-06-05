@@ -4,7 +4,6 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import SiteFooter from './components/SiteFooter'
 import SiteHeader from './components/SiteHeader'
 import Home from './pages/Home'
-import { trackPageView } from './utils/analytics'
 
 const Policy = lazy(() => import('./pages/Policy'))
 const Consent = lazy(() => import('./pages/Consent'))
@@ -20,22 +19,10 @@ const ScrollToTop = () => {
   return null
 }
 
-const RouteAnalyticsTracker = () => {
-  const location = useLocation()
-
-  useEffect(() => {
-    const path = `${location.pathname}${location.search}${location.hash}`
-    trackPageView(path, document.title)
-  }, [location.hash, location.pathname, location.search])
-
-  return null
-}
-
 const App = () => {
   return (
     <div>
       <ScrollToTop />
-      <RouteAnalyticsTracker />
       <a className="skip-link" href="#main-content">
         Перейти к основному содержанию
       </a>

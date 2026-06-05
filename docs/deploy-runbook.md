@@ -24,7 +24,6 @@
 - `EXTRA_CHECK_URLS` — comma-separated list дополнительных URL для pre/post checks.
 - `USE_CLEAN_WORKTREE` — по умолчанию `true`, deploy выполняется из одноразового worktree.
 - `ALLOW_DIRTY_REPO` — по умолчанию `false`, direct deploy из dirty repo запрещён.
-- `VITE_YM_COUNTER_ID` — должен приходить из private env/wrapper во время frontend build.
 
 ## Private Wrapper On The Server
 
@@ -46,7 +45,6 @@ export DOMAIN="primary.example.com"
 export WWW_DOMAIN="www.primary.example.com"
 export EXTRA_SYSTEMD_SERVICES="nginx.service,secondary-app.service"
 export EXTRA_CHECK_URLS="https://secondary.example.com"
-export VITE_YM_COUNTER_ID="12345678"
 
 exec bash deploy/deploy-app-only.sh
 ```
@@ -68,7 +66,6 @@ npm run lint:web
 npm run build:web
 npm run test:server
 npm run test:e2e:web
-npm run test:e2e:analytics:web
 npm run repo:safety
 ```
 
@@ -118,15 +115,12 @@ curl http://127.0.0.1:<port>/api/health
 curl -I https://odi-group.ru
 curl -I https://easychemistry.ru
 E2E_BASE_URL=https://odi-group.ru npm run test:e2e:web
-E2E_BASE_URL=https://odi-group.ru npm run test:e2e:analytics:web
 ```
 
 Дополнительно проверьте живой сайт в браузере:
 
 - desktop: hero, каталог, фильтры, gallery, project modal, calculator modal, contacts;
 - mobile: menu, scroll, contacts, calculator, consultation modal;
-- analytics: `window.ym` существует, загружается `mc.yandex.ru/metrika/tag.js`, цели продолжают
-  отправляться.
 
 ## Rollback
 

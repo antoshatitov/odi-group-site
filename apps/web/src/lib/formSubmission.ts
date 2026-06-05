@@ -1,5 +1,3 @@
-import { getAttribution } from '../utils/analytics'
-
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 export const PHONE_INPUT_PATTERN = /^[0-9+()\s-]{7,20}$/
 const DEFAULT_REQUEST_TIMEOUT_MS = 12_000
@@ -72,10 +70,7 @@ export const submitFormJson = async <TResponse, TPayload extends Record<string, 
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({
-        ...payload,
-        ...getAttribution(),
-      }),
+      body: JSON.stringify(payload),
     })
 
     const responseBody: unknown = await response.json().catch(() => null)

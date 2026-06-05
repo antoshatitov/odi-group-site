@@ -14,8 +14,6 @@
     "playwright:install:ci": "npx playwright install --with-deps chromium",
     "e2e:smoke": "node e2e/smoke.mjs",
     "e2e:smoke:headed": "PW_HEADLESS=false node e2e/smoke.mjs",
-    "e2e:analytics": "node e2e/analytics.mjs",
-    "e2e:analytics:headed": "PW_HEADLESS=false node e2e/analytics.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{json,md}\"",
     "preview": "vite preview"
   },

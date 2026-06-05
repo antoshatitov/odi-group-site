@@ -65,7 +65,6 @@
 - Agent browser smoke: `npm run agent-browser:smoke`
 - Install Playwright browser: `npm run playwright:install:web`
 - UI smoke tests: `npm run test:e2e:web`
-- Analytics e2e tests: `npm run test:e2e:analytics:web`
 
 ### Workspace commands
 
@@ -79,7 +78,6 @@
 - Check perf budgets: `npm --workspace apps/web run perf-check`
 - Install Playwright browser for CI: `npm --workspace apps/web run playwright:install:ci`
 - Web e2e smoke headed: `npm --workspace apps/web run e2e:smoke:headed`
-- Web e2e analytics headed: `npm --workspace apps/web run e2e:analytics:headed`
 
 ### CI mirrors
 
@@ -87,8 +85,7 @@ CI запускает `npm run repo:safety`, `npm run test:server`, `npm run lin
 `npm run build:web`, `npm --workspace apps/web run perf-check`,
 `npm --workspace apps/web run media-check`,
 `npm --workspace apps/web run playwright:install:ci`,
-`npm --workspace apps/web run e2e:smoke` и
-`npm --workspace apps/web run e2e:analytics`.
+`npm --workspace apps/web run e2e:smoke`.
 
 ---
 

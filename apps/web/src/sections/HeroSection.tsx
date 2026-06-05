@@ -5,8 +5,6 @@ import ContactIcon from '../components/ContactIcon'
 import Container from '../components/Container'
 import Section from '../components/Section'
 import { heroContactChannels } from '../data/contactChannels'
-import type { ContactChannel } from '../data/contactChannels'
-import { trackGoal } from '../utils/analytics'
 import { resolveHomeSectionHref } from '../utils/navigation'
 
 type ConnectionInfo = {
@@ -137,20 +135,7 @@ const HeroSection = () => {
   const [isContactMenuOpen, setIsContactMenuOpen] = useState(false)
   const contactMenuRef = useRef<HTMLDivElement | null>(null)
 
-  const handleCallClick = () => {
-    trackGoal('hero_cta_call_click', {
-      cta_location: 'hero',
-      source_context: 'hero_phone',
-    })
-  }
-
-  const handleContactClick = (item: ContactChannel) => {
-    const goalKey = item.label.toLowerCase()
-
-    trackGoal(`hero_cta_${goalKey}_click`, {
-      cta_location: 'hero',
-      source_context: `hero_${goalKey}`,
-    })
+  const closeContactMenu = () => {
     setIsContactMenuOpen(false)
   }
 
@@ -232,11 +217,7 @@ const HeroSection = () => {
               банках — ВТБ, Сбербанк, Дом.рф
             </p>
             <div className="hero-actions reveal" data-delay="3">
-              <a
-                className="btn btn-primary btn-lg"
-                href="tel:+79244422800"
-                onClick={handleCallClick}
-              >
+              <a className="btn btn-primary btn-lg" href="tel:+79244422800">
                 Позвонить
               </a>
               <div
@@ -267,7 +248,7 @@ const HeroSection = () => {
                       className="contact-menu-link"
                       href={item.href}
                       key={item.label}
-                      onClick={() => handleContactClick(item)}
+                      onClick={closeContactMenu}
                       rel={item.isExternal ? 'noreferrer' : undefined}
                       role="menuitem"
                       tabIndex={isContactMenuOpen ? undefined : -1}

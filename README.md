@@ -107,7 +107,6 @@ git remote -v
 Основные frontend-переменные:
 
 - `VITE_API_BASE`
-- `VITE_YM_COUNTER_ID`
 
 ## Команды
 
@@ -123,7 +122,6 @@ git remote -v
 - `npm run test:server` — серверные тесты
 - `npm run repo:safety` — проверка публичной безопасности репозитория
 - `npm run test:e2e:web` — Playwright smoke
-- `npm run test:e2e:analytics:web` — Playwright analytics smoke
 
 ## Performance и media workflow
 
@@ -143,12 +141,6 @@ Smoke-проверка UI:
 ```bash
 npm --workspace apps/web run playwright:install
 npm run test:e2e:web
-```
-
-Проверка аналитики:
-
-```bash
-npm run test:e2e:analytics:web
 ```
 
 ## agent-browser setup, check, smoke
