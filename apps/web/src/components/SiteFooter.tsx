@@ -1,3 +1,5 @@
+import { analyticsGoals, trackGoal } from '../lib/analytics'
+
 const SiteFooter = () => {
   return (
     <footer className="site-footer">
@@ -20,7 +22,12 @@ const SiteFooter = () => {
         </div>
         <div className="stack">
           <strong>Контакты</strong>
-          <a href="tel:+79244422800">+7 924 442-28-00</a>
+          <a
+            href="tel:+79244422800"
+            onClick={() => trackGoal(analyticsGoals.phoneClick, { location: 'footer' })}
+          >
+            +7 924 442-28-00
+          </a>
           <a href="mailto:bon2801@yandex.ru">bon2801@yandex.ru</a>
           <span>Калининград, ул. Третьяковская 2, офис 209</span>
         </div>

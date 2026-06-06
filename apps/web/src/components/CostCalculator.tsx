@@ -10,6 +10,7 @@ import {
   isValidPhoneNumber,
   submitFormJson,
 } from '../lib/formSubmission'
+import { analyticsGoals, trackGoal } from '../lib/analytics'
 import { formatRubles } from '../utils/format'
 
 const LOCAL_ATTEMPTS_KEY = 'odi_calc_attempts'
@@ -237,6 +238,10 @@ const CostCalculator = () => {
       }
 
       setStatus('success')
+      trackGoal(analyticsGoals.costEstimateSubmitSuccess, {
+        packageType,
+        floors,
+      })
     } catch (error) {
       setStatus('error')
       setError(
