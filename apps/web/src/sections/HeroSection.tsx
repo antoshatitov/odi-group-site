@@ -5,6 +5,7 @@ import ContactIcon from '../components/ContactIcon'
 import Container from '../components/Container'
 import Section from '../components/Section'
 import { heroContactChannels } from '../data/contactChannels'
+import { analyticsGoals, trackGoal } from '../lib/analytics'
 import { resolveHomeSectionHref } from '../utils/navigation'
 
 type ConnectionInfo = {
@@ -217,7 +218,11 @@ const HeroSection = () => {
               банках — ВТБ, Сбербанк, Дом.рф
             </p>
             <div className="hero-actions reveal" data-delay="3">
-              <a className="btn btn-primary btn-lg" href="tel:+79244422800">
+              <a
+                className="btn btn-primary btn-lg"
+                href="tel:+79244422800"
+                onClick={() => trackGoal(analyticsGoals.phoneClick, { location: 'hero' })}
+              >
                 Позвонить
               </a>
               <div
@@ -248,7 +253,10 @@ const HeroSection = () => {
                       className="contact-menu-link"
                       href={item.href}
                       key={item.label}
-                      onClick={closeContactMenu}
+                      onClick={() => {
+                        trackGoal(item.analyticsGoal, { location: 'hero' })
+                        closeContactMenu()
+                      }}
                       rel={item.isExternal ? 'noreferrer' : undefined}
                       role="menuitem"
                       tabIndex={isContactMenuOpen ? undefined : -1}

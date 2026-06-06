@@ -7,6 +7,7 @@ import Modal from './Modal'
 import ContactIcon from './ContactIcon'
 import { messengerChannels } from '../data/contactChannels'
 import { SHOW_SALE_SECTION } from '../data/showcaseGalleries'
+import { analyticsGoals, trackGoal } from '../lib/analytics'
 import { resolveHomeSectionHref } from '../utils/navigation'
 
 const navLinks = [
@@ -206,7 +207,10 @@ const SiteHeader = () => {
               <a
                 className="btn btn-outline"
                 href="tel:+79244422800"
-                onClick={() => closeMenu()}
+                onClick={() => {
+                  trackGoal(analyticsGoals.phoneClick, { location: 'mobile_header' })
+                  closeMenu()
+                }}
               >
                 +7 924 442-28-00
               </a>
@@ -218,7 +222,10 @@ const SiteHeader = () => {
                     key={channel.label}
                     target={channel.isExternal ? '_blank' : undefined}
                     rel={channel.isExternal ? 'noreferrer' : undefined}
-                    onClick={() => closeMenu()}
+                    onClick={() => {
+                      trackGoal(channel.analyticsGoal, { location: 'mobile_header' })
+                      closeMenu()
+                    }}
                   >
                     <ContactIcon icon={channel.icon} className="contact-channel-icon" />
                     <span>{channel.label}</span>
@@ -252,6 +259,7 @@ const SiteHeader = () => {
               className="btn btn-outline btn-sm header-phone"
               href="tel:+79244422800"
               aria-label="Позвонить"
+              onClick={() => trackGoal(analyticsGoals.phoneClick, { location: 'header' })}
             >
               <span className="header-phone-text">+7 924 442-28-00</span>
             </a>

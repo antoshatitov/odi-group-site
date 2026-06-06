@@ -11,6 +11,7 @@ import {
   isValidPhoneNumber,
   submitFormJson,
 } from '../lib/formSubmission'
+import { analyticsGoals, trackGoal } from '../lib/analytics'
 
 type LeadFormProps = {
   source: string
@@ -134,6 +135,12 @@ const LeadForm = ({
       })
 
       setStatus('success')
+      trackGoal(
+        source === 'callback'
+          ? analyticsGoals.callbackFormSubmitSuccess
+          : analyticsGoals.leadFormSubmitSuccess,
+        { source },
+      )
       reset()
     } catch (error) {
       setStatus('error')

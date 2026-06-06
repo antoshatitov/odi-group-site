@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 
 import SiteFooter from './components/SiteFooter'
 import SiteHeader from './components/SiteHeader'
+import { trackPageView } from './lib/analytics'
 import Home from './pages/Home'
 
 const Policy = lazy(() => import('./pages/Policy'))
@@ -10,11 +11,15 @@ const Consent = lazy(() => import('./pages/Consent'))
 const Cookies = lazy(() => import('./pages/Cookies'))
 
 const ScrollToTop = () => {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [pathname])
+
+  useEffect(() => {
+    trackPageView(window.location.href)
+  }, [pathname, search])
 
   return null
 }
