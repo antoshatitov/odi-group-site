@@ -170,11 +170,11 @@ Scoped checklist:
 
 Commit, push, PR и merge выполняются только по явному запросу пользователя.
 
-- Одна задача -> одна ветка -> один PR.
+- Один PR должен объединять логически связанные изменения; несвязанные темы не смешивать.
 - Запрещено пушить напрямую в `main`.
 - Перед commit/push/PR убедись, что текущая ветка не `main`; создай новую ветку, если нужно.
 - Agent-generated branch names: `feat/...`, `fix/...`, `chore/...`, `refactor/...`, `docs/...`, `test/...`; kebab-case, коротко, без `:`.
-- Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`), subject до 72 символов.
+- Commits: короткий понятный subject до 72 символов, описывающий результат изменения; Conventional Commits не обязательны.
 - Никогда не добавлять AI attribution footers: `Co-Authored-By: Codex`, `Generated with Codex`, `Generated with...` и аналоги.
 
 PR description must include:
