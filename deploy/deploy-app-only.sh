@@ -79,6 +79,12 @@ run_workspace_install() {
   fi
 }
 
+sync_frontend_dist() {
+  sudo mkdir -p "${APP_ROOT}/web/dist" "${APP_ROOT}/web/dist/assets"
+  sudo rsync -a --delete --exclude assets/ "${SOURCE_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
+  sudo rsync -a "${SOURCE_DIR}/apps/web/dist/assets/" "${APP_ROOT}/web/dist/assets/"
+}
+
 run_additional_service_checks() {
   local raw_services="$1"
   local label="$2"
@@ -243,7 +249,7 @@ main() {
   sudo mkdir -p "${APP_ROOT}/web/dist" "${APP_ROOT}/server"
 
   info "Syncing frontend and backend files"
-  sudo rsync -a --delete "${SOURCE_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
+  sync_frontend_dist
   # Keep server-side secrets that are not stored in git.
   sudo rsync -a --delete --exclude node_modules --exclude .env "${SOURCE_DIR}/apps/server/" "${APP_ROOT}/server/"
 

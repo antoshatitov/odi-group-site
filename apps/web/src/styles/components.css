@@ -455,6 +455,10 @@
   gap: var(--space-3);
 }
 
+.modal-lightbox .modal-body-lightbox > .stack {
+  padding-right: 0;
+}
+
 .modal-close {
   align-self: flex-end;
   font-size: var(--text-lg);
@@ -513,6 +517,11 @@
 }
 
 @media (max-width: 768px) {
+  .modal-overlay-lightbox {
+    place-items: stretch;
+    padding: 0;
+  }
+
   .modal {
     display: flex;
     flex-direction: column;
@@ -534,8 +543,10 @@
   }
 
   .modal-lightbox {
-    height: min(94vh, calc(100vh - (var(--space-4) * 2)));
-    max-height: 94vh;
+    width: 100%;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
     overflow: hidden;
   }
 
@@ -547,7 +558,15 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
-    padding: var(--space-3);
+    padding: calc(var(--space-3) + env(safe-area-inset-top))
+      calc(var(--space-3) + env(safe-area-inset-right))
+      calc(var(--space-3) + env(safe-area-inset-bottom))
+      calc(var(--space-3) + env(safe-area-inset-left));
+  }
+
+  .modal-lightbox .modal-close {
+    top: calc(var(--space-2) + env(safe-area-inset-top));
+    right: calc(var(--space-2) + env(safe-area-inset-right));
   }
 }
 
@@ -559,8 +578,8 @@
     }
 
     .modal-lightbox {
-      height: min(94dvh, calc(100dvh - (var(--space-4) * 2)));
-      max-height: 94dvh;
+      height: 100dvh;
+      max-height: none;
     }
   }
 }
