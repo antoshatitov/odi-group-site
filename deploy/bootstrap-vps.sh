@@ -106,6 +106,12 @@ WantedBy=multi-user.target
 EOF
 }
 
+sync_frontend_dist() {
+  mkdir -p "${APP_ROOT}/web/dist" "${APP_ROOT}/web/dist/assets"
+  rsync -a --delete --exclude assets/ "${SRC_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
+  rsync -a "${SRC_DIR}/apps/web/dist/assets/" "${APP_ROOT}/web/dist/assets/"
+}
+
 write_nginx_config() {
   sudo tee "/etc/nginx/sites-available/${NGINX_SITE_NAME}" >/dev/null <<EOF
 server {
@@ -117,6 +123,11 @@ server {
 
   location / {
     try_files \$uri /index.html;
+  }
+
+  location /assets/ {
+    try_files \$uri =404;
+    add_header Cache-Control "public, max-age=31536000, immutable";
   }
 
   location /api/ {
@@ -191,7 +202,7 @@ main() {
   sudo chown -R "$USER:$USER" "${APP_ROOT}"
 
   info "Syncing frontend and backend files"
-  rsync -a --delete "${SRC_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
+  sync_frontend_dist
   rsync -a --delete --exclude node_modules "${SRC_DIR}/apps/server/" "${APP_ROOT}/server/"
 
   info "Writing backend environment"

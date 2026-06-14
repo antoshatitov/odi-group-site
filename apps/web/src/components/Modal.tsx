@@ -88,6 +88,12 @@ const Modal = ({
   }, [isOpen, onClose])
 
   if (!isOpen) return null
+  const overlayClassName = [
+    'modal-overlay',
+    variant === 'lightbox' ? 'modal-overlay-lightbox' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
   const modalClassName = [
     'modal',
     variant === 'lightbox' ? 'modal-lightbox' : '',
@@ -100,7 +106,7 @@ const Modal = ({
 
   return (
     <div
-      className="modal-overlay"
+      className={overlayClassName}
       role="dialog"
       aria-modal="true"
       aria-label={title}
