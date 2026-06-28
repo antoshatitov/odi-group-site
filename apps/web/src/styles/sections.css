@@ -380,6 +380,45 @@
   display: block;
 }
 
+.hero-bank-partners {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--space-5);
+  width: min(100%, 42rem);
+  padding: 0;
+  margin: var(--space-3) 0 0;
+  list-style: none;
+}
+
+.hero-bank-logo {
+  --partner-logo-width: 8.6rem;
+  --partner-logo-height: 2.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 3.75rem;
+}
+
+.hero-bank-logo img {
+  display: block;
+  width: min(100%, var(--partner-logo-width));
+  height: var(--partner-logo-height);
+  object-fit: contain;
+  object-position: center;
+}
+
+.hero-bank-logo-sber {
+  --partner-logo-width: 8.85rem;
+  --partner-logo-height: 2.45rem;
+}
+
+.hero-bank-logo-dom-rf {
+  --partner-logo-width: 2.9rem;
+  --partner-logo-height: 2.9rem;
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -1327,6 +1366,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .hero-bank-partners {
+    width: min(100%, 36rem);
+    gap: var(--space-4);
+  }
+
   .stat-card {
     --stat-value-size: 4rem;
   }
@@ -1433,6 +1477,27 @@
 
   .hero-image {
     aspect-ratio: 5 / 6;
+  }
+
+  .hero-bank-partners {
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+
+  .hero-bank-logo {
+    --partner-logo-width: 5.7rem;
+    --partner-logo-height: 1.55rem;
+    min-height: 2.75rem;
+  }
+
+  .hero-bank-logo-sber {
+    --partner-logo-width: 5.9rem;
+    --partner-logo-height: 1.65rem;
+  }
+
+  .hero-bank-logo-dom-rf {
+    --partner-logo-width: 2rem;
+    --partner-logo-height: 2rem;
   }
 
   .hero-image img,

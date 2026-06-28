@@ -21,6 +21,12 @@ type HeroStat = {
   label: string
 }
 
+type HeroBankPartner = {
+  id: 'dom-rf' | 'sber' | 'vtb'
+  name: string
+  logo: string
+}
+
 const heroStats: HeroStat[] = [
   {
     value: '8+',
@@ -33,6 +39,24 @@ const heroStats: HeroStat[] = [
   {
     value: '79+',
     label: 'домов сданы под ключ',
+  },
+]
+
+const heroBankPartners: HeroBankPartner[] = [
+  {
+    id: 'vtb',
+    name: 'ВТБ',
+    logo: '/images/partners/vtb-bank.svg',
+  },
+  {
+    id: 'sber',
+    name: 'Сбербанк',
+    logo: '/images/partners/sber-logo-eng.svg',
+  },
+  {
+    id: 'dom-rf',
+    name: 'Дом.РФ',
+    logo: '/images/partners/dom-rf-logo.svg',
   },
 ]
 
@@ -291,6 +315,26 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
                 </div>
               ))}
             </div>
+            <ul
+              aria-label="Банки-партнеры по ипотеке"
+              className="hero-bank-partners reveal"
+              data-delay="3"
+            >
+              {heroBankPartners.map((partner) => (
+                <li
+                  className={`hero-bank-logo hero-bank-logo-${partner.id}`}
+                  key={partner.id}
+                >
+                  <img
+                    alt={partner.name}
+                    decoding="async"
+                    height="48"
+                    src={partner.logo}
+                    width="152"
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="hero-visual">
             <div className="hero-image">
