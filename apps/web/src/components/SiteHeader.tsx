@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import Button from './Button'
-import LeadForm from './LeadForm'
-import Modal from './Modal'
 import ContactIcon from './ContactIcon'
 import { messengerChannels } from '../data/contactChannels'
 import { SHOW_SALE_SECTION } from '../data/showcaseGalleries'
@@ -30,9 +28,12 @@ type BodyScrollLockStyles = {
   width: string
 }
 
-const SiteHeader = () => {
+type SiteHeaderProps = {
+  onOpenCalculator: () => void
+}
+
+const SiteHeader = ({ onOpenCalculator }: SiteHeaderProps) => {
   const [open, setOpen] = useState(false)
-  const [isCallbackOpen, setIsCallbackOpen] = useState(false)
   const mobileNavPanelRef = useRef<HTMLDivElement | null>(null)
   const menuToggleRef = useRef<HTMLButtonElement | null>(null)
   const lockedScrollYRef = useRef(0)
@@ -49,8 +50,8 @@ const SiteHeader = () => {
     setOpen(false)
   }
 
-  const openCallbackModal = () => {
-    setIsCallbackOpen(true)
+  const openCalculator = () => {
+    onOpenCalculator()
   }
 
   useEffect(() => {
@@ -204,6 +205,15 @@ const SiteHeader = () => {
               ))}
             </div>
             <div className="mobile-nav-actions">
+              <Button
+                type="button"
+                onClick={() => {
+                  openCalculator()
+                  closeMenu()
+                }}
+              >
+                Рассчитать стоимость строительства
+              </Button>
               <a
                 className="btn btn-outline"
                 href="tel:+79244422800"
@@ -263,8 +273,8 @@ const SiteHeader = () => {
             >
               <span className="header-phone-text">+7 924 442-28-00</span>
             </a>
-            <Button className="btn-sm" onClick={openCallbackModal} type="button">
-              Заказать звонок
+            <Button className="btn-sm" onClick={openCalculator} type="button">
+              Рассчитать стоимость строительства
             </Button>
             <Button
               ref={menuToggleRef}
@@ -283,25 +293,6 @@ const SiteHeader = () => {
         </div>
       </header>
       {mobileNav}
-      <Modal
-        isOpen={isCallbackOpen}
-        title="Заказать звонок"
-        onClose={() => setIsCallbackOpen(false)}
-      >
-        <div className="callback-modal-content">
-          <p className="callback-modal-lead">
-            Оставьте заявку, и мы свяжемся с вами в ближайшее время.
-          </p>
-          <LeadForm
-            className="callback-form"
-            source="callback"
-            messageMode="hidden"
-            autoPrefixRussianPhone
-            submitLabel="Заказать звонок"
-            successMessage="Спасибо! Мы перезвоним вам в ближайшее время."
-          />
-        </div>
-      </Modal>
     </>
   )
 }

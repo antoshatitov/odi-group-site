@@ -25,6 +25,13 @@ const createTestConfig = (overrides = {}) => ({
   telegramTimeoutMs: 20,
   telegramRetryAttempts: 1,
   telegramRetryBaseMs: 1,
+  smtpHost: 'smtp.example',
+  smtpPort: 465,
+  smtpSecure: true,
+  smtpUser: 'user',
+  smtpPass: 'pass',
+  mailFrom: 'ОДИ <user@example.com>',
+  estimateRecipients: ['titov.blg@yandex.ru'],
   inMemoryLimiterMaxKeys: 100,
   inMemoryDedupMaxKeys: 100,
   port: 8080,
@@ -228,21 +235,18 @@ describe('server modules', () => {
     }
   })
 
-  it('processes calculator requests and reports metrics', async () => {
-    const requests = []
-    const restore = installFetchMock(async (url, options) => {
-      requests.push({
-        url,
-        body: JSON.parse(options.body),
-      })
-
-      return new Response('{}', {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      })
-    })
-
-    const app = await createApp(createTestConfig())
+  it('processes estimate requests through email and reports metrics', async () => {
+    const messages = []
+    const app = await createApp(
+      createTestConfig({
+        mailTransport: {
+          sendMail: async (message) => {
+            messages.push(message)
+            return { messageId: 'test-message' }
+          },
+        },
+      }),
+    )
     const openedAt = Date.now() - 10_000
     const submittedAt = Date.now()
     const requestPayload = {
@@ -263,7 +267,7 @@ describe('server modules', () => {
     try {
       const response = await app.inject({
         method: 'POST',
-        url: '/api/cost-estimate',
+        url: '/api/estimate',
         payload: requestPayload,
       })
 
@@ -272,8 +276,10 @@ describe('server modules', () => {
       assert.equal(responsePayload.ok, true)
       assert.equal(responsePayload.estimate, 9600000)
       assert.equal(responsePayload.formattedEstimate, '9 600 000 ₽')
-      assert.equal(requests.length, 1)
-      assert.equal(requests[0].body.chat_id, 'chat-calc')
+      assert.equal(messages.length, 1)
+      assert.deepEqual(messages[0].to, ['titov.blg@yandex.ru'])
+      assert.match(messages[0].text, /Тестовый Пользователь/)
+      assert.match(messages[0].text, /9 600 000 ₽/)
 
       const health = await app.inject({
         method: 'GET',
@@ -285,30 +291,26 @@ describe('server modules', () => {
       assert.equal(health.json().calcMetrics.dedup, 0)
     } finally {
       await app.close()
-      restore()
     }
   })
 
   it('rejects calculator requests with invalid timing fields before sending', async () => {
-    const requests = []
-    const restore = installFetchMock(async (url, options) => {
-      requests.push({
-        url,
-        body: JSON.parse(options.body),
-      })
-
-      return new Response('{}', {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      })
-    })
-
-    const app = await createApp(createTestConfig())
+    const messages = []
+    const app = await createApp(
+      createTestConfig({
+        mailTransport: {
+          sendMail: async (message) => {
+            messages.push(message)
+            return { messageId: 'test-message' }
+          },
+        },
+      }),
+    )
 
     try {
       const response = await app.inject({
         method: 'POST',
-        url: '/api/cost-estimate',
+        url: '/api/estimate',
         payload: {
           floors: 1,
           area: 120,
@@ -325,7 +327,7 @@ describe('server modules', () => {
 
       assert.equal(response.statusCode, 400)
       assert.deepEqual(response.json(), { error: 'Invalid timing fields' })
-      assert.equal(requests.length, 0)
+      assert.equal(messages.length, 0)
 
       const health = await app.inject({
         method: 'GET',
@@ -335,7 +337,109 @@ describe('server modules', () => {
       assert.equal(health.json().calcMetrics.dedup, 0)
     } finally {
       await app.close()
-      restore()
+    }
+  })
+
+  it('rejects invalid estimate payloads before sending email', async () => {
+    const messages = []
+    const app = await createApp(
+      createTestConfig({
+        mailTransport: {
+          sendMail: async (message) => {
+            messages.push(message)
+            return { messageId: 'test-message' }
+          },
+        },
+      }),
+    )
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/estimate',
+        payload: {
+          floors: 3,
+          area: 120,
+          packageType: 'gray',
+          name: 'Тестовый Пользователь',
+          phone: '+7 924 442-28-02',
+          consent: true,
+          openedAt: Date.now() - 10_000,
+          submittedAt: Date.now(),
+        },
+      })
+
+      assert.equal(response.statusCode, 400)
+      assert.deepEqual(response.json(), { error: 'Invalid payload' })
+      assert.equal(messages.length, 0)
+    } finally {
+      await app.close()
+    }
+  })
+
+  it('drops honeypot estimate requests without sending email', async () => {
+    const messages = []
+    const app = await createApp(
+      createTestConfig({
+        mailTransport: {
+          sendMail: async (message) => {
+            messages.push(message)
+            return { messageId: 'test-message' }
+          },
+        },
+      }),
+    )
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/estimate',
+        payload: {
+          floors: 1,
+          area: 120,
+          packageType: 'gray',
+          name: 'Тестовый Пользователь',
+          phone: '+7 924 442-28-03',
+          consent: true,
+          website: 'bot-site',
+          openedAt: Date.now() - 10_000,
+          submittedAt: Date.now(),
+          action: 'cost_estimate',
+        },
+      })
+
+      assert.equal(response.statusCode, 200)
+      assert.equal(response.json().ok, true)
+      assert.equal(messages.length, 0)
+    } finally {
+      await app.close()
+    }
+  })
+
+  it('keeps the old calculator Telegram route disabled', async () => {
+    const app = await createApp(createTestConfig())
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/cost-estimate',
+        payload: {
+          floors: 1,
+          area: 120,
+          packageType: 'gray',
+          name: 'Тестовый Пользователь',
+          phone: '+7 924 442-28-01',
+          consent: true,
+          website: '',
+          openedAt: Date.now() - 10_000,
+          submittedAt: Date.now(),
+          action: 'cost_estimate',
+        },
+      })
+
+      assert.equal(response.statusCode, 404)
+    } finally {
+      await app.close()
     }
   })
 })

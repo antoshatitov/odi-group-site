@@ -48,16 +48,6 @@ export const loadServerConfig = (env = process.env) => {
     .map((origin) => origin.trim())
     .filter(Boolean)
 
-  const requiredEnv = ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID']
-  const missingEnv = requiredEnv.filter((key) => !readEnv(env[key]))
-
-  if (missingEnv.length > 0) {
-    const error = new Error('Missing required environment variables')
-    error.code = 'CONFIG_INVALID'
-    error.missingEnv = missingEnv
-    throw error
-  }
-
   if (isProduction && allowedOrigins.length === 0) {
     const error = new Error('ALLOWED_ORIGINS must be configured in production')
     error.code = 'CONFIG_INVALID'
@@ -87,6 +77,16 @@ export const loadServerConfig = (env = process.env) => {
     telegramTimeoutMs: Number(env.TELEGRAM_TIMEOUT_MS || 5000),
     telegramRetryAttempts: Number(env.TELEGRAM_RETRY_ATTEMPTS || 2),
     telegramRetryBaseMs: Number(env.TELEGRAM_RETRY_BASE_MS || 400),
+    smtpHost: readEnv(env.SMTP_HOST),
+    smtpPort: Number(env.SMTP_PORT || 465),
+    smtpSecure: env.SMTP_SECURE !== 'false',
+    smtpUser: readEnv(env.SMTP_USER),
+    smtpPass: readEnv(env.SMTP_PASS),
+    mailFrom: readEnv(env.MAIL_FROM),
+    estimateRecipients: (env.ESTIMATE_RECIPIENTS || 'titov.blg@yandex.ru')
+      .split(',')
+      .map((recipient) => recipient.trim())
+      .filter(Boolean),
     inMemoryLimiterMaxKeys: Number(env.IN_MEMORY_LIMITER_MAX_KEYS || 5000),
     inMemoryDedupMaxKeys: Number(env.IN_MEMORY_DEDUP_MAX_KEYS || 3000),
     port: Number(env.PORT || 8080),

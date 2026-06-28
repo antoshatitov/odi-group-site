@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type {
   MouseEvent as ReactMouseEvent,
@@ -6,11 +6,9 @@ import type {
   WheelEvent as ReactWheelEvent,
 } from 'react'
 
-import Badge from '../components/Badge'
 import Card from '../components/Card'
 import Container from '../components/Container'
 import JsonLd from '../components/JsonLd'
-import LeadForm from '../components/LeadForm'
 import Modal from '../components/Modal'
 import Section from '../components/Section'
 import { SHOW_SALE_SECTION, buildProjectItems, saleHouseItems } from '../data/showcaseGalleries'
@@ -156,14 +154,15 @@ const getBoundedGalleryZoom = (
   }
 }
 
-const CostCalculator = lazy(() => import('../components/CostCalculator'))
+type HomeProps = {
+  onOpenCalculator: () => void
+}
 
-const Home = () => {
+const Home = ({ onOpenCalculator }: HomeProps) => {
   const { galleryItems, isGalleryLoading, galleryLoadError } = useLazyGalleryData()
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [galleryZoom, setGalleryZoom] = useState<GalleryZoomState>(defaultGalleryZoom)
-  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const [isProcessVisible, setIsProcessVisible] = useState(
     () => !('IntersectionObserver' in window),
   )
@@ -459,7 +458,7 @@ const Home = () => {
   return (
     <>
       <JsonLd data={homeStructuredData} />
-      <HeroSection />
+      <HeroSection onOpenCalculator={onOpenCalculator} />
 
       <GallerySection
         items={galleryItems}
@@ -568,69 +567,7 @@ const Home = () => {
         </Container>
       </Section>
 
-      <Section id="consultation">
-        <Container>
-          <div className="contact-grid contact-grid-single">
-            <Card className="contact-card">
-              <span className="eyebrow">Консультация</span>
-              <h2 className="h2">Расскажите о вашем будущем доме</h2>
-              <p className="muted">
-                Мы перезвоним, уточним задачу и предложим сценарий строительства под ваш участок и
-                бюджет.
-              </p>
-              <div className="consultation-topics">
-                <div className="stack">
-                  <Badge>Персональный подход</Badge>
-                  <h3 className="h3">Что обсудим на звонке</h3>
-                </div>
-                <ul className="stack">
-                  <li>Параметры участка и геологию.</li>
-                  <li>Тип дома и желаемые материалы.</li>
-                  <li>Оценку бюджета и возможные оптимизации.</li>
-                  <li>Сроки проектирования и строительства.</li>
-                </ul>
-              </div>
-              <LeadForm source="consultation" />
-            </Card>
-          </div>
-        </Container>
-      </Section>
-
       <ContactsSection mapContainerRef={mapContainerRef} />
-
-      <Modal
-        isOpen={isCalculatorOpen}
-        title="Расчет стоимости строительства"
-        onClose={() => setIsCalculatorOpen(false)}
-        side={
-          <div className="stack">
-            <Badge>Персональный расчет</Badge>
-            <p className="muted">
-              Оценка носит ориентировочный характер. Финальную смету уточняем после консультации и
-              анализа участка.
-            </p>
-            <div className="divider" />
-            <div className="stack" style={{ gap: 'var(--space-3)' }}>
-              <div>
-                <strong>Ответ в течение 2 часов</strong>
-                <div className="muted">Свяжемся по телефону и уточним детали проекта.</div>
-              </div>
-              <div>
-                <strong>Безопасно и конфиденциально</strong>
-                <div className="muted">Используем данные только для расчета и консультации.</div>
-              </div>
-              <div>
-                <strong>Прозрачная смета</strong>
-                <div className="muted">Покажем стоимость по этапам и закрепим в договоре.</div>
-              </div>
-            </div>
-          </div>
-        }
-      >
-        <Suspense fallback={<div className="muted">Загружаем…</div>}>
-          <CostCalculator />
-        </Suspense>
-      </Modal>
 
       <Modal
         isOpen={Boolean(activeGallery)}

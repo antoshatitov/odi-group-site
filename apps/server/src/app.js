@@ -4,7 +4,7 @@ import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 
 import { createCorsOriginChecker } from './config.js'
-import { createCostEstimateRuntime, registerCostEstimateRoute } from './routes/cost-estimate.js'
+import { createEstimateRuntime, registerEstimateRoute } from './routes/estimate.js'
 import { registerHealthRoute } from './routes/health.js'
 import { registerLeadRoute } from './routes/lead.js'
 
@@ -34,13 +34,13 @@ export const createApp = async (config) => {
     keyGenerator: (req) => req.ip,
   })
 
-  const costRuntime = createCostEstimateRuntime(config)
+  const estimateRuntime = createEstimateRuntime(config)
 
   registerLeadRoute(server, config)
-  registerCostEstimateRoute(server, config, costRuntime)
+  registerEstimateRoute(server, config, estimateRuntime)
   registerHealthRoute(server, {
     startedAt: config.startedAt,
-    metrics: costRuntime.metrics,
+    metrics: estimateRuntime.metrics,
   })
 
   server.setErrorHandler((error, _request, reply) => {

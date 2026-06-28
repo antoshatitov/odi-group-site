@@ -18,6 +18,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@odi/contracts": "file:../../packages/contracts",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.0"
