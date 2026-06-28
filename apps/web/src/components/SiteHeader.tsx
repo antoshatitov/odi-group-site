@@ -189,8 +189,14 @@ const SiteHeader = ({ onOpenCalculator }: SiteHeaderProps) => {
                 <img src="/images/logo.png" alt="ОДИ" width={240} height={70} />
                 <small>строительная компания</small>
               </a>
-              <Button variant="ghost" size="sm" onClick={() => closeMenu()}>
-                Закрыть
+              <Button
+                className="mobile-nav-close"
+                variant="ghost"
+                size="sm"
+                onClick={() => closeMenu()}
+                aria-label="Закрыть меню"
+              >
+                ×
               </Button>
             </div>
             <div className="mobile-nav-links">
