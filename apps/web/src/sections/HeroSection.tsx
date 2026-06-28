@@ -6,7 +6,6 @@ import Container from '../components/Container'
 import Section from '../components/Section'
 import { heroContactChannels } from '../data/contactChannels'
 import { analyticsGoals, trackGoal } from '../lib/analytics'
-import { resolveHomeSectionHref } from '../utils/navigation'
 
 type ConnectionInfo = {
   saveData?: boolean
@@ -131,7 +130,11 @@ const RollingStatValue = ({ value }: { value: string }) => (
   </span>
 )
 
-const HeroSection = () => {
+type HeroSectionProps = {
+  onOpenCalculator: () => void
+}
+
+const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
   const [allowAutoplay, setAllowAutoplay] = useState(shouldAutoplayHero)
   const [isContactMenuOpen, setIsContactMenuOpen] = useState(false)
   const contactMenuRef = useRef<HTMLDivElement | null>(null)
@@ -268,9 +271,9 @@ const HeroSection = () => {
                   ))}
                 </div>
               </div>
-              <a className="btn btn-outline btn-lg" href={resolveHomeSectionHref('#projects')}>
-                Смотреть проекты
-              </a>
+              <Button size="lg" variant="outline" type="button" onClick={onOpenCalculator}>
+                Рассчитать стоимость строительства
+              </Button>
             </div>
             <div className="hero-stats">
               {heroStats.map((stat, index) => (

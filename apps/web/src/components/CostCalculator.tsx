@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
+import { estimatePayloadSchema } from '@odi/contracts'
 
 import type { FormEvent } from 'react'
+import type { EstimateResponse } from '@odi/contracts'
 
 import Button from './Button'
 import Input from './Input'
@@ -11,7 +13,6 @@ import {
   submitFormJson,
 } from '../lib/formSubmission'
 import { analyticsGoals, trackGoal } from '../lib/analytics'
-import { formatRubles } from '../utils/format'
 
 const LOCAL_ATTEMPTS_KEY = 'odi_calc_attempts'
 const LOCAL_LIMIT_WINDOW_MS = 2 * 60 * 1000
@@ -219,19 +220,19 @@ const CostCalculator = () => {
           ? { clientSuspected: true, clientSuspectedReason: 'fast_submit' }
           : {}),
       }
+      const parsedPayload = estimatePayloadSchema.safeParse(requestPayload)
+      if (!parsedPayload.success) {
+        setStatus('error')
+        setError('Проверьте заполненные поля и попробуйте ещё раз.')
+        return
+      }
 
-      const responsePayload = await submitFormJson<{
-        ok: true
-        estimate?: number
-        formattedEstimate?: string
-      }, typeof requestPayload>({
-        path: '/api/cost-estimate',
-        payload: requestPayload,
+      const responsePayload = await submitFormJson<EstimateResponse, typeof parsedPayload.data>({
+        path: '/api/estimate',
+        payload: parsedPayload.data,
       })
 
-      const formattedEstimate =
-        responsePayload?.formattedEstimate ||
-        (responsePayload?.estimate ? formatRubles(responsePayload.estimate) : '')
+      const formattedEstimate = responsePayload.formattedEstimate
 
       if (formattedEstimate) {
         setEstimate(formattedEstimate)
